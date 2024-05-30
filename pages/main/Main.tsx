@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Animated, Dimensions, Easing, Image, Keyboard, Modal, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, TouchableWithoutFeedback, View } from 'react-native';
 import { Calendar, LocaleConfig } from 'react-native-calendars'
+import { RoutineDTO, TodoDTO } from '../Index';
 
 LocaleConfig.locales['ko'] = {
     monthNames: ['1월', '2월', '3월', '4월', '5월', '6월', '7월', '8월', '9월', '10월', '11월', '12월'],
@@ -13,16 +14,6 @@ LocaleConfig.defaultLocale = 'ko';
 
 const windowWidth = Dimensions.get('window').width;
 
-export type TodoDTO = {
-    id : number,
-    content : string,
-    success : boolean,
-    alarm : boolean,
-    alarmDate : Date,
-    time : any,
-    date : Date
-}
-
 export type ModalDTO = {
     active : boolean,
     type: "routine" | "todo" | null,
@@ -30,20 +21,6 @@ export type ModalDTO = {
     title: string,
     message: string
 }
-
-export type RoutineDTO = {
-    id : number,
-    content : string,
-    term : boolean[]
-    startDate : Date,
-    end : boolean,
-    endDate : Date,
-    success : Date[],
-    alarm : boolean,
-    alarmDate : Date,
-    time : any,
-}
-
 
 interface Props {
     globalFont: string;
@@ -72,6 +49,10 @@ const Main: React.FC<Props> = ({globalFont,keys,todoList,routineList,routineId,l
         onSetLatId, onSetLater,onTodoAlarm,onCancelAlarm,
         onTodoDTO,onTodoCheck,onTodoDelete,onRoutineEnd,onRoutineRe,onRoutineUpdate,
         onRoutineCheck,onRoutineDTO,onMove}) => {
+
+    const mainRef = useRef<ScrollView>(null)
+
+    const [contentHeight, setContentHeight] = useState(0);
     
     const [week,setWeek] = useState<number[][]>([])
     const [date,setDate] = useState<Date>(new Date())
@@ -445,6 +426,8 @@ const Main: React.FC<Props> = ({globalFont,keys,todoList,routineList,routineId,l
     const onDTO = () => {
         Keyboard.dismiss()
 
+        mainRef.current?.scrollTo({ y: contentHeight, animated: true });
+
         onTodoDTO(todoDTO)
 
         setTodoDTO({
@@ -708,6 +691,7 @@ const Main: React.FC<Props> = ({globalFont,keys,todoList,routineList,routineId,l
             <Animated.View style={[wekAni,{overflow:'hidden',height: 170}]}>
                 <View style={{height: 170}}>
                     <Pressable
+                        disabled={dateToInt(date) === dateToInt(new Date())}
                         style={{flexDirection:'row'}}
                         onPress={() => {
                             aniMain.setValue(0)
@@ -717,13 +701,13 @@ const Main: React.FC<Props> = ({globalFont,keys,todoList,routineList,routineId,l
                             date.getDay() === 2 ? '화' : date.getDay() === 3 ? '수' : date.getDay() === 4 ? '목' : date.getDay() === 5 ? '금' : '토'}요일`}
                         </Text>
                         {dateToInt(date) === dateToInt(new Date()) && 
-                            <Text style={[{color:globalFont},styles.dayItem]}>오늘</Text> 
+                            <Text style={[{color:"white"},styles.dayItem]}>오늘</Text> 
                         }    
                         {dateToInt(date) === (dateToInt(new Date())) - 86400000 && 
-                            <Text style={[{color:globalFont},styles.dayItem]}>어제</Text> 
+                            <Text style={[{color:"white"},styles.dayItem]}>어제</Text> 
                         }    
                         {dateToInt(date) === (dateToInt(new Date())) + 86400000 && 
-                            <Text style={[{color:globalFont},styles.dayItem]}>내일</Text> 
+                            <Text style={[{color:"white"},styles.dayItem]}>내일</Text> 
                         }    
                     </Pressable>
                     <View style={{flexDirection:'row',justifyContent:'space-around',marginHorizontal:10}}>
@@ -749,6 +733,7 @@ const Main: React.FC<Props> = ({globalFont,keys,todoList,routineList,routineId,l
                             {week.map((wk,index) => <View key={`${wk}_${index}`} style={{flexDirection:'row',justifyContent:'space-between'}}>
                                 {wk.map((item,index)=><Pressable 
                                     key={`${item}_${index}`}
+                                    disabled={ date.getDate() === item }
                                     onPress={ () => onWeek(date.getDate() - item) }
                                     style={{width:'14.3%',height:50,justifyContent:'center',alignItems:'center'}}>
                                     <Text style={[styles.calTxt,{backgroundColor: date.getDate() === item ? 'darkgray' : 'white' , 
@@ -776,7 +761,9 @@ const Main: React.FC<Props> = ({globalFont,keys,todoList,routineList,routineId,l
             </Pressable>}
             {!later && <View style={{flex:1}}>
                 <Animated.ScrollView
+                    ref={mainRef}
                     style={{opacity: aniMain}}
+                    onContentSizeChange={(_, height) => setContentHeight(height)}
                     showsVerticalScrollIndicator={false}>
                     <View>
                         {routineList.filter(rou => new Date(rou.startDate) < date && (rou.end ? dateToInt(rou.endDate) > dateToInt(date) : true) && rou.term[date.getDay()]).length > 0 && 
@@ -795,6 +782,7 @@ const Main: React.FC<Props> = ({globalFont,keys,todoList,routineList,routineId,l
                                     { item.alarm &&<Text style={styles.alTxt}>
                                         {item.alarmDate.getHours().toString().padStart(2, '0')} : {item.alarmDate.getMinutes().toString().padStart(2, '0')}
                                     </Text>}
+                                    <Text style={[styles.alTxt,{backgroundColor:'#2E8DFF'}]}>START D+{ -(dateToInt(item.startDate) - dateToInt(date))/86400000 }</Text>
                                     { item.end && 
                                         <Text style={[styles.alTxt,{backgroundColor:'tomato'}]}>END D-{ (dateToInt(item.endDate) - dateToInt(date))/86400000 }</Text>
                                     }
@@ -1254,10 +1242,10 @@ const Main: React.FC<Props> = ({globalFont,keys,todoList,routineList,routineId,l
 
 const styles = StyleSheet.create({
     h2 : {
-        fontSize: 25,
+        fontSize: 22,
         fontWeight: 'bold',
-        marginLeft: 10,
-        marginBottom: 15,
+        paddingLeft: 10,
+        paddingBottom: 10,
     },
     calendar: {
         padding: 10,
@@ -1398,12 +1386,11 @@ const styles = StyleSheet.create({
         color:'white'
     },
     dayItem : {
-        fontSize:18,
+        fontSize:17,
         fontWeight:'bold',
-        elevation:5,
-        backgroundColor:'white',
+        backgroundColor:'black',
         marginBottom:18,
-        marginTop:22,
+        marginTop:23,
         paddingHorizontal:7,
         paddingVertical:3,
         borderRadius:10

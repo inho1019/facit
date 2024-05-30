@@ -14,7 +14,9 @@
     "react": "18.2.0",
     "react-native": "0.73.6",
     "react-native-calendars": "^1.1304.1",
-    "react-native-push-notification": "^8.1.1"
+    "react-native-circular-progress": "^1.4.0",
+    "react-native-push-notification": "^8.1.1",
+    "react-native-svg": "^15.3.0"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0",

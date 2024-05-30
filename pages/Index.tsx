@@ -1,9 +1,11 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Main from "./main/Main";
-import { Image, Keyboard, Modal, PermissionsAndroid, Platform, Pressable, ScrollView, StyleSheet, Text, TouchableWithoutFeedback, View } from "react-native";
+import { Button, Dimensions, Image, Keyboard, Modal, PermissionsAndroid, Platform, Pressable, ScrollView, StyleSheet, Text, TouchableWithoutFeedback, View } from "react-native";
 import Attain from "./main/Attain";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import PushNotification from "react-native-push-notification";
+
+export type AttainType = "date" | "week" | "month" | "year" | "custom"
 
 export type TodoDTO = {
     id : number,
@@ -58,6 +60,30 @@ PushNotification.createChannel(
 
 const Index: React.FC = () => {
 
+    const scrollRef = useRef<ScrollView>(null)
+    
+    const windowWidth = Dimensions.get('window').width;
+
+    //////////////////////Attain//////////////////////
+    const [date,setDate] = useState(new Date());
+    const [startDate,setStartDate] = useState(new Date());
+    const [endDate,setEndDate] = useState(new Date());
+    const [attainType,setAttainType] = useState<AttainType>("date")
+
+    const onDate = (date : Date) => {
+        setDate(date)
+    }
+    const onEndDate = (date : Date) => {
+        setEndDate(date)
+    }
+    const onStartDate = (date : Date) => {
+        setStartDate(date)
+    }
+    const onAttainType = (type : AttainType) => {
+        setAttainType(type)
+    }
+    //////////////////////////////////////////////////
+
     const [key,setKey] = useState(false)
     const [todoList,setTodoList] = useState<TodoDTO[]>([])
     const [routineList,setRoutineList] = useState<RoutineDTO[]>([])
@@ -72,14 +98,23 @@ const Index: React.FC = () => {
     const [todoModal,setTodoModal] = useState<boolean>(false)
     const [todoModalId,setTodoModalId] = useState<number>(-1)
 
+    const [rouDate,setRouDate] = useState<Date>(new Date())
     const [routineModal,setRoutineModal] = useState<boolean>(false)
     const [routineModalId,setRoutineModalId] = useState<number>(-1)
+
+    const [page,setPage] = useState<number>(0)
 
     const dateToInt = (date : Date | string) => {
         const newDate = new Date(date)
         const numDate = new Date(newDate.getFullYear(),newDate.getMonth(),newDate.getDate())
 
         return numDate.getTime();
+    }
+
+    const pageChange = (event:any) => {
+        const offsetX = event.nativeEvent.contentOffset.x;
+        const pageIndex = Math.round(offsetX / event.nativeEvent.layoutMeasurement.width);
+        setPage(pageIndex);
     }
 
     useEffect(() => {
@@ -114,7 +149,15 @@ const Index: React.FC = () => {
                     setTodoModal(true)
                     setTodoModalId(parseInt(notification.id))
                 }
+                if(parseInt(notification.id) === 0) {
+                    console.log("asdfasfasdf")
+                    requestAnimationFrame(() => {
+                        scrollRef.current?.scrollTo({x: windowWidth, animated: true})
+                        setPage(1)
+                    })
+                }
                 if(parseInt(notification.id) < 0) {
+                    setRouDate(new Date())
                     setRoutineModal(true)
                     setRoutineModalId(-parseInt(notification.id))
                 }
@@ -331,6 +374,16 @@ const Index: React.FC = () => {
         }))
     }
 
+    const onTodoSuccess = (id : number) => {
+        setTodoList(list => list.map(item => {
+            if(item.id === id) {
+                return {...item, success: true}
+            } else {
+                return item
+            }
+        }))
+    }
+
     const onTodoDelete = (id : number) => {
 
         PushNotification.cancelLocalNotification((id).toString());
@@ -349,6 +402,20 @@ const Index: React.FC = () => {
                     return {...item,success : [...item.success, date]};
                 } else {
                     return {...item,success : item.success.filter(filt => dateToInt(filt) !== dateToInt(date))};
+                }
+            } else {
+                return item
+            } 
+        }))
+    }
+
+    const onRoutineSuccess = (id : number,date : Date) => {
+        setRoutineList(list => list.map(item => {
+            if(item.id === id) {
+                if(item.success.findIndex(fd => dateToInt(fd) === dateToInt(date)) === -1) {
+                    return {...item,success : [...item.success, date]};
+                } else {
+                    return {...item};
                 }
             } else {
                 return item
@@ -411,6 +478,7 @@ const Index: React.FC = () => {
     }
 
     const closeRoutineModal = () => {
+        setRouDate(new Date())
         setRoutineModal(false)
         setRoutineModalId(-1)
     }
@@ -426,7 +494,7 @@ const Index: React.FC = () => {
             if(item.alarm && 
                 item.term[new Date().getDay()] && 
                 new Date() < ifDate &&
-                !(item.end && dateToInt(item.endDate) > dateToInt(new Date()))
+                !(item.end && dateToInt(item.endDate) >= dateToInt(new Date()))
             ) {     
                 PushNotification.localNotificationSchedule({
                     channelId: "routine",
@@ -458,12 +526,14 @@ const Index: React.FC = () => {
         <TouchableWithoutFeedback onPress={() => Keyboard.dismiss()} disabled={!key}>
             <View style={{flex:1}}>
                 <ScrollView
+                    ref={ scrollRef }
                     pagingEnabled
                     horizontal
                     keyboardShouldPersistTaps='handled'
                     showsHorizontalScrollIndicator={false}
                     contentContainerStyle={{width: `200%`}}
                     scrollEventThrottle={50}
+                    onMomentumScrollEnd={pageChange}
                     decelerationRate="fast"
                 >
                     <Main globalFont={globalFont} keys={key} routineId={routineId} later={later} latId={latId}
@@ -472,7 +542,8 @@ const Index: React.FC = () => {
                         onRoutineCheck={onRoutineCheck} onMove={onMove} onTodoDelete={onTodoDelete} onRoutineDTO={onRoutineDTO}
                         onRoutineEnd={onRoutineEnd} onRoutineRe={onRoutineRe} onRoutineUpdate={onRoutineUpdate} 
                         todoList={todoList} routineList={routineList}/>
-                    <Attain/>
+                    <Attain globalFont={globalFont} todoList={todoList} routineList={routineList} date={date} page={page}
+                        onDate={onDate}/>
                 </ScrollView>
                 <Modal
                     animationType="fade"
@@ -493,7 +564,7 @@ const Index: React.FC = () => {
                             </Pressable>
                             <Pressable
                                 onPress={() => {
-                                    onTodoCheck(todoModalId)
+                                    onTodoSuccess(todoModalId)
                                     closeTodoModal()
                                 }}
                                 >
@@ -533,7 +604,7 @@ const Index: React.FC = () => {
                             </Pressable>
                             <Pressable
                                 onPress={() => {
-                                    onRoutineCheck(routineModalId,new Date())
+                                    onRoutineSuccess(routineModalId,rouDate)
                                     closeRoutineModal()
                                 }}
                                 >
