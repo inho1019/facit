@@ -1435,7 +1435,7 @@ const styles = StyleSheet.create({
     },
     alarm : {
         flexDirection:'row',
-        borderRadius:5,
+        borderRadius:1,
         borderWidth:3,
         borderColor:'black',
         paddingHorizontal:1

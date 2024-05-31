@@ -4,6 +4,7 @@ import { Button, Dimensions, Image, Keyboard, Modal, PermissionsAndroid, Platfor
 import Attain from "./main/Attain";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import PushNotification from "react-native-push-notification";
+import Setting from "./main/Setting";
 
 export type AttainType = "date" | "week" | "month" | "year" | "custom"
 
@@ -542,7 +543,7 @@ const Index: React.FC = () => {
                     horizontal
                     keyboardShouldPersistTaps='handled'
                     showsHorizontalScrollIndicator={false}
-                    contentContainerStyle={{width: `200%`}}
+                    contentContainerStyle={{width: `300%`}}
                     scrollEventThrottle={50}
                     onMomentumScrollEnd={pageChange}
                     decelerationRate="fast"
@@ -556,6 +557,7 @@ const Index: React.FC = () => {
                     <Attain globalFont={globalFont} todoList={todoList} routineList={routineList} date={date} page={page}
                         type={attainType} startDate={startDate} endDate={endDate} onStartDate={onStartDate} onEndDate={onEndDate}
                         onDate={onDate} onAttainType={onAttainType}/>
+                    <Setting/>
                 </ScrollView>
                 <Modal
                     animationType="fade"

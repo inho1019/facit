@@ -38,6 +38,19 @@ const Attain: React.FC<Props> = ({globalFont,todoList,routineList,page,date,star
         return numDate.getTime();
     }
 
+    const conuntWeek = (itemStartDate:Date, weeknum:number) => {
+        let count = 0;
+        let currentDate = new Date(dateToInt(itemStartDate) > dateToInt(startDate) ? itemStartDate : startDate);
+
+        while (dateToInt(currentDate) <= dateToInt(endDate)) {
+            if (currentDate.getDay() === weeknum) {
+                count++;
+            }
+            currentDate.setDate(currentDate.getDate() + 1);
+        }
+        return count;
+    }
+
     const windowWidth = Dimensions.get('window').width;
 
     const [typeNumber,setTypeNumber] = useState<number>(0); 
@@ -84,17 +97,62 @@ const Attain: React.FC<Props> = ({globalFont,todoList,routineList,page,date,star
         todoFillList.filter(todo => todo.success).length / todoFillList.length * 100
     ,[todoFillList,page,date]);
     
-    const routineFill = useMemo(() => 
-        routineFillList.filter(rou => rou.success.findIndex(item => type === "date" ? (dateToInt(item) === dateToInt(date)) : 
-        (dateToInt(item) >= dateToInt(startDate) && dateToInt(item) <= dateToInt(endDate))) !== -1).length / routineFillList.length * 100
-    ,[routineFillList,page,date]);
+    const routineFill = useMemo(() => {
+        if (type === "date") {
+            return  routineFillList.filter(rou => rou.success.findIndex(item => 
+                (dateToInt(item) === dateToInt(date))) !== -1).length / routineFillList.length * 100
+        } else {
+            const totalRoutineNum : number = routineFillList.map(item => {
+                const trueArr : number[] = [];
+
+                item.term.forEach((value, index) => {
+                    if (value) {
+                        trueArr.push(index);
+                    }
+                });
+
+                return trueArr.map(num => {
+                    return conuntWeek(item.startDate, num)
+                }).reduce((accumulator, currentValue) => accumulator + currentValue, 0);
+            }).reduce((accumulator, currentValue) => accumulator + currentValue, 0);
+
+            const successRoutineNum : number = routineFillList.map(item => {
+                return item.success.filter(dt => dateToInt(dt) >= dateToInt(startDate) && dateToInt(dt) <= dateToInt(endDate)).length
+            }).reduce((accumulator, currentValue) => accumulator + currentValue, 0);
+
+            return successRoutineNum / totalRoutineNum * 100
+        }
+    },[routineFillList,page,date]);
 
     const totalFill = useMemo(() => {
         if (todoFillList.length + routineFillList.length === 0) {
             return 0;
         }
-        return (todoFillList.filter(todo => todo.success).length + routineFillList.filter(rou => rou.success.findIndex(item => dateToInt(item) === dateToInt(date)) !== -1).length) /
-        (todoFillList.length + routineFillList.length) * 100
+        if (type === "date") {
+            return (todoFillList.filter(todo => todo.success).length + routineFillList.filter(rou => rou.success.findIndex(item => dateToInt(item) === dateToInt(date)) !== -1).length) /
+            (todoFillList.length + routineFillList.length) * 100
+        } else {
+            const totalRoutineNum : number = routineFillList.map(item => {
+                const trueArr : number[] = [];
+
+                item.term.forEach((value, index) => {
+                    if (value) {
+                        trueArr.push(index);
+                    }
+                });
+
+                return trueArr.map(num => {
+                    return conuntWeek(item.startDate, num)
+                }).reduce((accumulator, currentValue) => accumulator + currentValue, 0);
+            }).reduce((accumulator, currentValue) => accumulator + currentValue, 0);
+
+            const successRoutineNum : number = routineFillList.map(item => {
+                return item.success.filter(dt => dateToInt(dt) >= dateToInt(startDate) && dateToInt(dt) <= dateToInt(endDate)).length
+            }).reduce((accumulator, currentValue) => accumulator + currentValue, 0);
+
+            return (todoFillList.filter(todo => todo.success).length + successRoutineNum) /
+            (todoFillList.length + totalRoutineNum) * 100
+        }
     },[todoFillList,routineFillList]);
 
     useEffect(() => {
@@ -110,6 +168,10 @@ const Attain: React.FC<Props> = ({globalFont,todoList,routineList,page,date,star
             if ( typeNumber === 1) {
                 const setStartDate = new Date()
                 setStartDate.setDate(setStartDate.getDate()-( nowDate.getDay() === 0 ? 7 : nowDate.getDay() )+1)
+                onStartDate(setStartDate)
+                onEndDate(nowDate)
+            } else if ( typeNumber === 2) {
+                const setStartDate = new Date(nowDate.getFullYear(), nowDate.getMonth(), 1);
                 onStartDate(setStartDate)
                 onEndDate(nowDate)
             }
@@ -175,7 +237,7 @@ const Attain: React.FC<Props> = ({globalFont,todoList,routineList,page,date,star
     },[page,date,todoFillList,routineFillList])
 
     return(
-        <ScrollView style={{flex:1}}>
+        <View style={{flex:1}}>
             <View style={{flexDirection:'row', alignItems:'center', justifyContent:'center',marginTop:5}}>
                 <View style={{marginTop:2}}>
                     <Pressable
@@ -257,6 +319,7 @@ const Attain: React.FC<Props> = ({globalFont,todoList,routineList,page,date,star
                     </Pressable> : <View style={{width:25,height:25}}/>}
                 </View> :
                 // 주간
+                type === "week" ? 
                 <View style={{flexDirection:"row",justifyContent:'space-evenly',alignItems:'center',marginBottom:5}}>
                     <Pressable
                         onPress={() => {
@@ -291,6 +354,48 @@ const Attain: React.FC<Props> = ({globalFont,todoList,routineList,page,date,star
                             onStartDate(new Date(startDate.getTime() + 86400000 * 7))
                             onEndDate(dateToInt(new Date(startDate.getTime() + 86400000 * 13)) > dateToInt(nowDate) ? nowDate : new Date(startDate.getTime() + 86400000 * 13))
                             aniTxt.setValue(0);
+                        }}
+                    >
+                        <Image source={require(  '../../assets/image/arrow.png')} 
+                            style={{width:25, height:25, marginTop: 15, transform:[{rotate : '90deg'}]}}/>
+                    </Pressable>}
+                </View> :
+                // 월간
+                <View style={{flexDirection:"row",justifyContent:'space-evenly',alignItems:'center',marginBottom:5}}>
+                    <Pressable
+                        onPress={() => {
+                            const setStartDate = new Date(startDate.getFullYear(), startDate.getMonth() - 1, 1);
+                            onStartDate(setStartDate)
+                            const setEndDate = new Date(startDate.getFullYear(), startDate.getMonth(), 0);
+                            onEndDate(setEndDate)
+                        }}
+                    >
+                        <Image source={require(  '../../assets/image/arrow.png')} 
+                            style={{width:25,height:25, marginTop: 15, transform:[{rotate : '-90deg'}]}}/>
+                    </Pressable>
+                    <Pressable
+                        disabled={dateToInt(nowDate) - (86400000 * 7) < dateToInt(startDate)}
+                        onPress={() => {
+                            aniTxt.setValue(0);
+                            const setStartDate = new Date(nowDate.getFullYear(), nowDate.getMonth(), 1);
+                            onStartDate(setStartDate)
+                            onEndDate(nowDate)
+                        }}
+                    >
+                        <Text style={[styles.h2,{color:globalFont, marginTop: 10}]}>
+                            { ( startDate.getFullYear() === new Date().getFullYear() && startDate.getMonth() === new Date().getMonth() ) ? 
+                                '이번달' : `${startDate.getFullYear()}년 ${startDate.getMonth() + 1}월`
+                            }
+                        </Text>
+                    </Pressable>
+                    { ( startDate.getFullYear() === new Date().getFullYear() && startDate.getMonth() === new Date().getMonth() ) ? 
+                    <View style={{width:25,height:25}}/>
+                    : <Pressable
+                        onPress={() => {
+                            const setStartDate = new Date(startDate.getFullYear(), startDate.getMonth() + 1, 1);
+                            onStartDate(setStartDate)
+                            const setEndDate = new Date(startDate.getFullYear(), startDate.getMonth() + 2, 0);
+                            onEndDate(dateToInt(setEndDate) > dateToInt(nowDate) ? nowDate : setEndDate)
                         }}
                     >
                         <Image source={require(  '../../assets/image/arrow.png')} 
@@ -348,14 +453,14 @@ const Attain: React.FC<Props> = ({globalFont,todoList,routineList,page,date,star
                     </View>
                 </View>
             </View>
-            <View style={[styles.attainBox,{marginBottom:10,gap:10}]}>
-                <Text style={[styles.h2,{color:globalFont,marginLeft:15,marginTop:5}]}>달성</Text>
-                <View style={{flexDirection:'row',justifyContent:'space-around',marginTop:5}}>
+            <View style={[styles.attainBox,{marginBottom:10,gap:10,flex:1,paddingHorizontal:0,paddingBottom:35}]}>
+                <Text style={[styles.h2,{color:globalFont,marginLeft:15}]}>달성</Text>
+                <View style={{flexDirection:'row',justifyContent:'space-around'}}>
                     <Text style={[styles.h4,{color:globalFont}]}>목표</Text>
                     <Text style={[styles.h4,{color:globalFont}]}>루틴</Text>
                 </View>
-                <View style={{flexDirection:'row',justifyContent:'center',gap:10,paddingHorizontal:10}}>
-                    <ScrollView style={styles.listBox}>
+                <View style={{flexDirection:'row',justifyContent:'center',flex:1}}>
+                    <ScrollView style={[styles.listBox,{borderRightWidth:0.6}]}>
                         {
                             todoFillList.filter(todo => todo.success).map((item,index) => 
                             <Animated.View key={`${item}_${index}`} style={[styles.items,{opacity:aniTxt}]}>
@@ -363,9 +468,14 @@ const Attain: React.FC<Props> = ({globalFont,todoList,routineList,page,date,star
                             </Animated.View>)
                         }
                     </ScrollView>
-                    <ScrollView style={styles.listBox}>
-                    {
+                    <ScrollView style={[styles.listBox,{borderLeftWidth:0.6}]}>
+                        {
+                            type === 'date' ?
                             routineFillList.filter(rou => rou.success.findIndex(item => dateToInt(item) === dateToInt(date)) !== -1).map((item,index) => 
+                            <Animated.View key={`${item}_${index}`} style={[styles.items,{opacity:aniTxt}]}>
+                                <Text style={{color:globalFont}}>{item.content}</Text>
+                            </Animated.View>) :
+                            routineFillList.map((item,index) => 
                             <Animated.View key={`${item}_${index}`} style={[styles.items,{opacity:aniTxt}]}>
                                 <Text style={{color:globalFont}}>{item.content}</Text>
                             </Animated.View>)
@@ -373,7 +483,7 @@ const Attain: React.FC<Props> = ({globalFont,todoList,routineList,page,date,star
                     </ScrollView>
                 </View>
             </View>
-        </ScrollView>
+        </View>
     )
 }
 
@@ -411,15 +521,14 @@ const styles = StyleSheet.create({
     },
     listBox : {
         flex: 1,
-        height:200,
         borderTopWidth: 1,
         borderBottomWidth: 1,
-        borderColor: 'gray',
+        borderColor: 'lightgray',
     },
     items : {
         padding: 10,
         borderBottomWidth: 1,
-        borderBottomColor: 'gray'
+        borderBottomColor: 'lightgray'
     }
 });
 export default Attain;
