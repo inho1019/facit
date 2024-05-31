@@ -18,8 +18,9 @@ export type ModalDTO = {
     active : boolean,
     type: "routine" | "todo" | null,
     id: number,
-    title: string,
-    message: string
+    title?: string,
+    message?: string,
+    subMessage?: string
 }
 
 interface Props {
@@ -43,10 +44,11 @@ interface Props {
     onRoutineCheck: (id: number, date: Date) => void;
     onRoutineDTO: (routineDTO: RoutineDTO) => void;
     onMove: (dt: Date, latId: number) => void;
+    onAttain: (date: Date) => void;
 }
 
 const Main: React.FC<Props> = ({globalFont,keys,todoList,routineList,routineId,later, latId,
-        onSetLatId, onSetLater,onTodoAlarm,onCancelAlarm,
+        onSetLatId, onSetLater,onTodoAlarm,onCancelAlarm,onAttain,
         onTodoDTO,onTodoCheck,onTodoDelete,onRoutineEnd,onRoutineRe,onRoutineUpdate,
         onRoutineCheck,onRoutineDTO,onMove}) => {
 
@@ -83,6 +85,8 @@ const Main: React.FC<Props> = ({globalFont,keys,todoList,routineList,routineId,l
 
     const [alarm,setAlarm] = useState<boolean>(false)
     const [alarmId,setAlarmId] = useState<number>(-1)
+
+    const [calendarVisible,setCalendarVisible] = useState<boolean>(true)
 
     const [modalConfirm,setModalConfirm] = useState<ModalDTO>({
         active : false,
@@ -498,7 +502,11 @@ const Main: React.FC<Props> = ({globalFont,keys,todoList,routineList,routineId,l
         <Pressable
             onPress={() => {
                 aniMain.setValue(0)
+                setCalendarVisible(false)
                 setDate(new Date())
+                requestAnimationFrame(() => {
+                    setCalendarVisible(true)
+                })
             }}>
             <Text style={{fontSize:22,fontWeight:'bold',color: globalFont}}>{year}년 {date.getMonth() + 1}월</Text>
         </Pressable>
@@ -550,8 +558,40 @@ const Main: React.FC<Props> = ({globalFont,keys,todoList,routineList,routineId,l
         newDate.setSeconds(0)
 
         if(dateDTO) {
-            const startDate = new Date();
-            startDate.setDate(new Date().getDate() - 1)
+            const startDate = dateToInt(date) < dateToInt(new Date()) ? new Date() : date;
+            if(dateToInt(date) < dateToInt(new Date())) {
+                if(!rouWeek[new Date().getDay()]) {
+                    for(let i = 0;i < 7;i++) {
+                        if( i + new Date().getDay() < 7) {
+                            if(rouWeek[i+new Date().getDay()]) {
+                                startDate.setDate( startDate.getDate() + i )
+                                break;
+                            }
+                        } else {
+                            if(rouWeek[i+new Date().getDay()-7]) {
+                                startDate.setDate( startDate.getDate() + i )
+                                break;
+                            }
+                        }
+                    }
+                }
+            } else {
+                if(!rouWeek[date.getDay()]) {
+                    for(let i = 0;i < 7;i++) {
+                        if( i + date.getDay() < 7) {
+                            if(rouWeek[i+date.getDay()]) {
+                                startDate.setDate( startDate.getDate() + i)
+                                break;
+                            }
+                        } else {
+                            if(rouWeek[i+date.getDay()-7]) {
+                                startDate.setDate( startDate.getDate() + i )
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
             const routineDTO : RoutineDTO = {
                 id : routineId,
                 content : dateDTO.content,
@@ -659,7 +699,7 @@ const Main: React.FC<Props> = ({globalFont,keys,todoList,routineList,routineId,l
             {!fold && 
                 <Animated.View style={[calAni,{overflow:'scroll'}]}>
                     <View onLayout={onViewLayout}>
-                        <Calendar
+                        {calendarVisible ? <Calendar
                             style={styles.calendar}
                             current={date.toISOString().split('T')[0]}
                             renderHeader={ calendarHeader }
@@ -675,49 +715,69 @@ const Main: React.FC<Props> = ({globalFont,keys,todoList,routineList,routineId,l
                                 [date.toISOString().split('T')[0]]: { selected: true, selectedColor: 'darkgray' },
                             }}
                             theme={{
+                                'stylesheet.calendar.header': {
+                                    dayTextAtIndex5: {
+                                        color: '#2E8DFF'
+                                    },
+                                    dayTextAtIndex6: {
+                                        color: 'tomato'
+                                    }
+                                },
+                                textSaturdayColor: '#2E8DFF',
+                                textSundayColor: 'tomato',
+                                arrowColor: 'black',
                                 todayTextColor: 'black',
-                                textDayFontSize: 18,
+                                textDayFontSize: 17,
                                 textDayFontWeight: 'bold',
-                                textMonthFontSize: 18,
+                                textMonthFontSize: 17,
                                 textMonthFontWeight: 'bold',
-                                textSectionTitleColor: 'rgba(138, 138, 138, 1)',
+                                textSectionTitleColor: globalFont,      
                             }}
                             firstDay={1}
-                        />
+                        /> : <View style={{height:calHeight}}/>}
                     </View>
                 </Animated.View>
             }
             {fold &&
             <Animated.View style={[wekAni,{overflow:'hidden',height: 170}]}>
                 <View style={{height: 170}}>
-                    <Pressable
-                        disabled={dateToInt(date) === dateToInt(new Date())}
-                        style={{flexDirection:'row'}}
-                        onPress={() => {
-                            aniMain.setValue(0)
-                            setDate(new Date())
-                        }}>
-                        <Text style={[styles.topDay,{color:globalFont}]}>{`${date.getMonth()+1}월 ${date.getDate()}일 ${date.getDay() === 0 ? '일' : date.getDay() === 1 ? '월' : 
-                            date.getDay() === 2 ? '화' : date.getDay() === 3 ? '수' : date.getDay() === 4 ? '목' : date.getDay() === 5 ? '금' : '토'}요일`}
-                        </Text>
-                        {dateToInt(date) === dateToInt(new Date()) && 
-                            <Text style={[{color:"white"},styles.dayItem]}>오늘</Text> 
-                        }    
-                        {dateToInt(date) === (dateToInt(new Date())) - 86400000 && 
-                            <Text style={[{color:"white"},styles.dayItem]}>어제</Text> 
-                        }    
-                        {dateToInt(date) === (dateToInt(new Date())) + 86400000 && 
-                            <Text style={[{color:"white"},styles.dayItem]}>내일</Text> 
-                        }    
-                    </Pressable>
+                    <View style={{flexDirection:'row',justifyContent:'space-between',alignItems:'center'}}>
+                        <Pressable
+                            disabled={dateToInt(date) === dateToInt(new Date())}
+                            style={{flexDirection:'row'}}
+                            onPress={() => {
+                                aniMain.setValue(0)
+                                setDate(new Date())
+                            }}>
+                            <Text style={[styles.topDay,{color:globalFont}]}>{`${date.getMonth()+1}월 ${date.getDate()}일 ${date.getDay() === 0 ? '일' : date.getDay() === 1 ? '월' : 
+                                date.getDay() === 2 ? '화' : date.getDay() === 3 ? '수' : date.getDay() === 4 ? '목' : date.getDay() === 5 ? '금' : '토'}요일`}
+                            </Text>
+                            {dateToInt(date) === dateToInt(new Date()) && 
+                                <Text style={[{color:"white"},styles.dayItem]}>오늘</Text> 
+                            }    
+                            {dateToInt(date) === (dateToInt(new Date())) - 86400000 && 
+                                <Text style={[{color:"white"},styles.dayItem]}>어제</Text> 
+                            }    
+                            {dateToInt(date) === (dateToInt(new Date())) + 86400000 && 
+                                <Text style={[{color:"white"},styles.dayItem]}>내일</Text> 
+                            }    
+                        </Pressable>
+                        {dateToInt(date) <= (dateToInt(new Date())) && <Pressable
+                            onPress={() => onAttain(date)}
+                            style={{flexDirection:'row',alignItems:'center',marginRight:20}}
+                        >
+                            <Text style={{color:globalFont,fontSize:18}}>통계</Text>
+                            <Image source={require(  '../../assets/image/triangle.png')} style={{width:15,height:15,marginTop:5,marginLeft:1,transform:[{rotate : '90deg'}]}}/>
+                        </Pressable>}
+                    </View>
                     <View style={{flexDirection:'row',justifyContent:'space-around',marginHorizontal:10}}>
                         <Text style={{color:globalFont}}>월</Text>
                         <Text style={{color:globalFont}}>화</Text>
                         <Text style={{color:globalFont}}>수</Text>
                         <Text style={{color:globalFont}}>목</Text>
                         <Text style={{color:globalFont}}>금</Text>
-                        <Text style={{color:globalFont}}>토</Text>
-                        <Text style={{color:globalFont}}>일</Text>
+                        <Text style={{color:'#2E8DFF'}}>토</Text>
+                        <Text style={{color:'tomato'}}>일</Text>
                     </View>
                     <View style={styles.calBox}>
                         <ScrollView
@@ -729,19 +789,19 @@ const Main: React.FC<Props> = ({globalFont,keys,todoList,routineList,routineId,l
                             onMomentumScrollEnd={pageChange}
                             showsVerticalScrollIndicator={false}
                         >
-                        <Animated.View style={{flex: 1,flexDirection:'column',opacity:aniOpa}}>
-                            {week.map((wk,index) => <View key={`${wk}_${index}`} style={{flexDirection:'row',justifyContent:'space-between'}}>
-                                {wk.map((item,index)=><Pressable 
-                                    key={`${item}_${index}`}
-                                    disabled={ date.getDate() === item }
-                                    onPress={ () => onWeek(date.getDate() - item) }
-                                    style={{width:'14.3%',height:50,justifyContent:'center',alignItems:'center'}}>
-                                    <Text style={[styles.calTxt,{backgroundColor: date.getDate() === item ? 'darkgray' : 'white' , 
-                                        color: date.getDate() === item ? 'white' : 'black', width:40,height:40,
-                                        borderRadius:20,textAlignVertical:'center',textAlign:'center'}]}>{item}</Text>
-                                </Pressable>)}
-                            </View>)}
-                        </Animated.View>
+                            <Animated.View style={{flex: 1,flexDirection:'column',opacity:aniOpa}}>
+                                {week.map((wk,index) => <View key={`${wk}_${index}`} style={{flexDirection:'row',justifyContent:'space-between'}}>
+                                    {wk.map((item,index)=><Pressable 
+                                        key={`${item}_${index}`}
+                                        disabled={ date.getDate() === item }
+                                        onPress={ () => onWeek(date.getDate() - item) }
+                                        style={{width:'14.3%',height:50,justifyContent:'center',alignItems:'center'}}>
+                                        <Text style={[styles.calTxt,{backgroundColor: date.getDate() === item ? 'darkgray' : 'white' , 
+                                            color: date.getDate() === item ? 'white' : index === 5 ? '#2E8DFF' : index === 6 ? 'tomato' : 'black', width:40,height:40,
+                                            borderRadius:20,textAlignVertical:'center',textAlign:'center'}]}>{item}</Text>
+                                    </Pressable>)}
+                                </View>)}
+                            </Animated.View>
                         </ScrollView>
                     </View>
                 </View>
@@ -756,7 +816,7 @@ const Main: React.FC<Props> = ({globalFont,keys,todoList,routineList,routineId,l
             {later && <Pressable
                 onPress={() => onSetLater(false)}
                 style={{flex:1,justifyContent:'center',alignItems:'center'}}>
-                <Text style={{color:globalFont,fontSize: 17}}>계획 이동</Text>
+                <Text style={{color:globalFont,fontSize: 17}}>목표 이동</Text>
                 <Text style={{color:globalFont,fontSize: 17}}>이동할 날짜를 선택하세요</Text>
             </Pressable>}
             {!later && <View style={{flex:1}}>
@@ -766,9 +826,11 @@ const Main: React.FC<Props> = ({globalFont,keys,todoList,routineList,routineId,l
                     onContentSizeChange={(_, height) => setContentHeight(height)}
                     showsVerticalScrollIndicator={false}>
                     <View>
-                        {routineList.filter(rou => new Date(rou.startDate) < date && (rou.end ? dateToInt(rou.endDate) > dateToInt(date) : true) && rou.term[date.getDay()]).length > 0 && 
+                        {routineList.filter(rou => dateToInt(new Date(rou.startDate)) <= dateToInt(date) && 
+                            (rou.end ? dateToInt(rou.endDate) > dateToInt(date) : true) && rou.term[date.getDay()]).length > 0 && 
                             <Text style={[styles.h2,{color:globalFont,marginTop:10}]}>루틴</Text>}
-                        {routineList.filter(rou => new Date(rou.startDate) < date && (rou.end ? dateToInt(rou.endDate) > dateToInt(date) : true) && rou.term[date.getDay()])
+                        {routineList.filter(rou => dateToInt(new Date(rou.startDate)) <= dateToInt(date) && 
+                            (rou.end ? dateToInt(rou.endDate) > dateToInt(date) : true) && rou.term[date.getDay()])
                             .map((item,index) => 
                                 <View key={`${item}_${index}`}
                             style={[styles.rouItem]}>
@@ -806,7 +868,7 @@ const Main: React.FC<Props> = ({globalFont,keys,todoList,routineList,routineId,l
                     </View>
                     <TouchableWithoutFeedback onPress={() => onOpenIndex(-1)} disabled={ openIdx === -1 || aning }>
                         <View>
-                            {todoList.filter(todo => dateToInt(todo.date) === dateToInt(date)).length > 0 && <Text style={[styles.h2,{color:globalFont,marginTop:10}]}>계획</Text>}
+                            {todoList.filter(todo => dateToInt(todo.date) === dateToInt(date)).length > 0 && <Text style={[styles.h2,{color:globalFont,marginTop:10}]}>목표</Text>}
                             {todoList.filter(todo => dateToInt(todo.date) === dateToInt(date)).map((item,index) => 
                                 <View key={`${item}_${index}`}
                                     style={styles.goalItem}>
@@ -830,8 +892,9 @@ const Main: React.FC<Props> = ({globalFont,keys,todoList,routineList,routineId,l
                                                 active : true,
                                                 type : 'todo',
                                                 id : item.id,
-                                                title : '계획 삭제',
-                                                message : '계획을 삭제하시겠습니까?'
+                                                title : '목표 삭제',
+                                                message : '목표를 삭제하시겠습니까?',
+                                                subMessage : '※삭제된 목표는 복구할 수 없습니다.'
                                             })}>
                                             <Image source={ require(  '../../assets/image/delete.png') } 
                                             style={{width:30,height:30,marginHorizontal:3}}/>
@@ -874,22 +937,22 @@ const Main: React.FC<Props> = ({globalFont,keys,todoList,routineList,routineId,l
                     </TouchableWithoutFeedback>
                     <View style={{paddingBottom:85}}/>
                 </Animated.ScrollView>
-                    <View style={[styles.contentBox,{opacity: keys ? 1 : 0.8 }]}>
-                        <TextInput value={todoDTO.content} 
-                            multiline
-                            style={[styles.contentInput,{color:globalFont}]}
-                            placeholder='계획 입력'
-                            placeholderTextColor="gray" 
-                            onSubmitEditing={ () => todoDTO.content.length > 0 && onDTO() }
-                            onChangeText={(text) => 
-                                setTodoDTO(item => {
-                                return {...item,content : text} 
-                        })}/>
-                        <Pressable onPress={ () => todoDTO.content.length > 0 && onDTO() }>
-                            <Image source={require('../../assets/image/schedule_add.png')} style={[styles.scheduleImg,
-                                {opacity: todoDTO.content.length > 0 ? 1 : 0.3 }]}/>
-                        </Pressable>
-                    </View>
+            </View>}
+            {!later && <View style={[styles.contentBox,{opacity: keys ? 1 : 0.8 }]}>
+                <TextInput value={todoDTO.content} 
+                    multiline
+                    style={[styles.contentInput,{color:globalFont}]}
+                    placeholder='목표 입력'
+                    placeholderTextColor="gray" 
+                    onSubmitEditing={ () => todoDTO.content.length > 0 && onDTO() }
+                    onChangeText={(text) => 
+                        setTodoDTO(item => {
+                        return {...item,content : text} 
+                })}/>
+                <Pressable onPress={ () => todoDTO.content.length > 0 && onDTO() }>
+                    <Image source={require('../../assets/image/schedule_add.png')} style={[styles.scheduleImg,
+                        {opacity: todoDTO.content.length > 0 ? 1 : 0.3 }]}/>
+                </Pressable>
             </View>}
             <Modal
                 animationType="fade"
@@ -928,12 +991,12 @@ const Main: React.FC<Props> = ({globalFont,keys,todoList,routineList,routineId,l
                         <Pressable
                             onPress={() => onRouWeek(6)}>
                             <Text style={[styles.rouTxt,{backgroundColor: rouWeek[6] ? 'darkgray' : 'whitesmoke' , 
-                                    color: rouWeek[6] ? 'white' : 'black'}]}>토</Text>
+                                    color: rouWeek[6] ? 'white' : '#2E8DFF'}]}>토</Text>
                         </Pressable>
                         <Pressable
                             onPress={() => onRouWeek(0)}>
                             <Text style={[styles.rouTxt,{backgroundColor: rouWeek[0] ? 'darkgray' : 'whitesmoke' , 
-                                    color: rouWeek[0] ? 'white' : 'black'}]}>일</Text>
+                                    color: rouWeek[0] ? 'white' : 'tomato'}]}>일</Text>
                         </Pressable>
                     </View>
                     <View style={{flexDirection:'row',marginTop:20,justifyContent:'center',gap:25}}>
@@ -1101,7 +1164,8 @@ const Main: React.FC<Props> = ({globalFont,keys,todoList,routineList,routineId,l
                                     type : 'routine',
                                     id : upId,
                                     title : '루틴 종료',
-                                    message : '루틴을 종료하시겠습니까?'
+                                    message : '루틴을 종료하시겠습니까?',
+                                    subMessage : '※선택된 날짜를 기준으로 종료됩니다.'
                                 })}
                                 >
                                 <Text style={{backgroundColor:'tomato', borderRadius: 5, paddingVertical: 3, paddingHorizontal: 7, color: 'white',marginRight:5,fontSize:16,fontWeight:'bold'}}>
@@ -1138,12 +1202,12 @@ const Main: React.FC<Props> = ({globalFont,keys,todoList,routineList,routineId,l
                             <Pressable
                                 onPress={() => onUpWeek(6)}>
                                 <Text style={[styles.rouTxt,{backgroundColor: upWeek[6] ? 'darkgray' : 'whitesmoke' , 
-                                        color: upWeek[6] ? 'white' : 'black'}]}>토</Text>
+                                        color: upWeek[6] ? 'white' : '#2E8DFF'}]}>토</Text>
                             </Pressable>
                             <Pressable
                                 onPress={() => onUpWeek(0)}>
                                 <Text style={[styles.rouTxt,{backgroundColor: upWeek[0] ? 'darkgray' : 'whitesmoke' , 
-                                        color: upWeek[0] ? 'white' : 'black'}]}>일</Text>
+                                        color: upWeek[0] ? 'white' : 'tomato'}]}>일</Text>
                             </Pressable>
                         </View>
                         <View style={{flexDirection:'row',marginTop:20,justifyContent:'center',gap:25}}>
@@ -1197,9 +1261,10 @@ const Main: React.FC<Props> = ({globalFont,keys,todoList,routineList,routineId,l
                             </Pressable>
                             <Pressable
                                 onPress={onUpRoutine}
+                                disabled={upWeek.filter(item => item).length === 0}
                                 >
                                 <Image source={ require(  '../../assets/image/check.png') } 
-                                    style={styles.modalBut}/>
+                                    style={[styles.modalBut,{opacity:upWeek.filter(item => item).length === 0 ? 0.3 : 1}]}/>
                             </Pressable>
                         </View>
                     </View>}
@@ -1213,26 +1278,31 @@ const Main: React.FC<Props> = ({globalFont,keys,todoList,routineList,routineId,l
                 <View style={{flex:1,justifyContent:'center',alignItems:'center',backgroundColor:'#00000010'}}>
                     <View style={styles.rouModal}>
                         <Text style={[styles.modalTitle,{color:globalFont}]}>{modalConfirm?.title}</Text>
-                        <Text style={{color: globalFont,fontSize:16,paddingVertical:10,paddingHorizontal:20}}>
-                            {modalConfirm?.message}
-                        </Text>
-                            <View style={{flexDirection:'row',justifyContent:'space-evenly',marginTop:5}}>
-                        <Pressable
-                            onPress={closeConfirm}>
-                                <Image source={ require(  '../../assets/image/cancel.png') } 
+                        <View style={{paddingVertical:10,paddingHorizontal:20,gap:3}}>                            
+                            <Text style={{color: globalFont,fontSize:16}}>
+                                {modalConfirm?.message}
+                            </Text>
+                            <Text style={{color: globalFont,fontSize:12}}>
+                                {modalConfirm?.subMessage}
+                            </Text>
+                        </View>
+                        <View style={{flexDirection:'row',justifyContent:'space-evenly',marginTop:5}}>
+                            <Pressable
+                                onPress={closeConfirm}>
+                                    <Image source={ require(  '../../assets/image/cancel.png') } 
+                                        style={styles.modalBut}/>
+                            </Pressable>
+                            <Pressable
+                                onPress={() => {
+                                    modalConfirm.type === "todo" ? onTodoDelete(modalConfirm?.id) :
+                                    modalConfirm.type === "routine" && onDeleteRoutine()
+                                    closeConfirm()
+                                }}
+                                >
+                                <Image source={ require(  '../../assets/image/check.png') } 
                                     style={styles.modalBut}/>
-                        </Pressable>
-                        <Pressable
-                            onPress={() => {
-                                modalConfirm.type === "todo" ? onTodoDelete(modalConfirm?.id) :
-                                modalConfirm.type === "routine" && onDeleteRoutine()
-                                closeConfirm()
-                            }}
-                            >
-                            <Image source={ require(  '../../assets/image/check.png') } 
-                                style={styles.modalBut}/>
-                        </Pressable>
-                    </View>
+                            </Pressable>
+                        </View>
                     </View>
                 </View>
             </Modal>

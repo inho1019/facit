@@ -1,19 +1,29 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Animated, Dimensions, Easing, Image, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
-import { RoutineDTO, TodoDTO } from "../Index";
+import { AttainType, RoutineDTO, TodoDTO } from "../Index";
 import { AnimatedCircularProgress } from 'react-native-circular-progress';
 
 interface Props {
+    type: AttainType;
     globalFont: string;
     todoList: TodoDTO[];
     routineList: RoutineDTO[];
     page: number;
     date: Date;
+    startDate: Date;
+    endDate: Date;
     onDate: (date: Date) => void;
+    onStartDate: (date: Date) => void;
+    onEndDate: (date: Date) => void;
+    onAttainType: (type: AttainType) => void;
 }
    
 
-const Attain: React.FC<Props> = ({globalFont,todoList,routineList,page,date,onDate}) => {
+const Attain: React.FC<Props> = ({globalFont,todoList,routineList,page,date,startDate,endDate,type,onDate,onAttainType,onStartDate,onEndDate}) => {
+
+    const nowDate = useMemo(() => new Date(),[page]);
+
+    const scrollRef = useRef<ScrollView>(null)
 
     const circleRef1 = useRef<AnimatedCircularProgress>(null);
     const circleRef2 = useRef<AnimatedCircularProgress>(null);
@@ -30,13 +40,44 @@ const Attain: React.FC<Props> = ({globalFont,todoList,routineList,page,date,onDa
 
     const windowWidth = Dimensions.get('window').width;
 
+    const [typeNumber,setTypeNumber] = useState<number>(0); 
+    const [typeLoading,setTypeLoading] = useState<boolean>(false);
+
+    const typeChange = (event:any) => {
+        const offsetY = event.nativeEvent.contentOffset.y;
+        const typeIndex = Math.round(offsetY / event.nativeEvent.layoutMeasurement.height);
+        setTypeNumber(typeIndex);
+    }
+
     const todoFillList: TodoDTO[] = useMemo(() => {
-        return todoList.filter(todo => dateToInt(todo.date) === dateToInt(date))
-    },[todoList,page,date])
+        if( type === "date" ) {
+            return todoList.filter(todo => dateToInt(todo.date) === dateToInt(date))
+        } else {
+            return todoList.filter(todo => dateToInt(todo.date) >= dateToInt(startDate) && dateToInt(todo.date) <= dateToInt(endDate))
+        }
+    },[todoList,page,date,type,startDate,endDate])
 
     const routineFillList: RoutineDTO[] = useMemo(() => {
-        return routineList.filter(rou => new Date(rou.startDate) < date && (rou.end ? dateToInt(rou.endDate) > dateToInt(date) : true) && rou.term[date.getDay()])
-    },[routineList,page,date])
+        if( type === "date" ) {
+            return routineList.filter(rou => !(rou.end && dateToInt(rou.startDate) === dateToInt(endDate)) && dateToInt(rou.startDate) <= dateToInt(date) && 
+                (rou.end ? dateToInt(rou.endDate) > dateToInt(date) : true) && rou.term[date.getDay()])
+        } else {
+            const indexArr:number[] = [0,1,2,3,4,5,6]
+            let checkArr:number[] = []
+            const dateGap = (dateToInt(endDate) - dateToInt(startDate)) / 86400000
+            if (dateGap < 7) {
+                if (new Date(startDate).getDay() <= new Date(endDate).getDay()) {
+                    checkArr = indexArr.map((item) => item >= new Date(startDate).getDay() && item <= new Date(endDate).getDay() ? item : -1) 
+                } else {
+                    checkArr = indexArr.map((item) => item >= new Date(startDate).getDay() || item <= new Date(endDate).getDay() ? item : -1)
+                }
+            }
+            return routineList.filter(rou => !(rou.end && dateToInt(rou.startDate) === dateToInt(endDate)) && 
+                dateToInt(rou.startDate) <= dateToInt(endDate) && 
+                (rou.end ? dateToInt(rou.endDate) > dateToInt(startDate) : true) && 
+                (dateGap < 7 ? checkArr.some(item => rou.term[item]) : true ))
+        }
+    },[routineList,page,date,type,startDate,endDate])
           
     
     const todoFill = useMemo(() => 
@@ -44,7 +85,8 @@ const Attain: React.FC<Props> = ({globalFont,todoList,routineList,page,date,onDa
     ,[todoFillList,page,date]);
     
     const routineFill = useMemo(() => 
-        routineFillList.filter(rou => rou.success.findIndex(item => dateToInt(item) === dateToInt(date)) !== -1).length / routineFillList.length * 100
+        routineFillList.filter(rou => rou.success.findIndex(item => type === "date" ? (dateToInt(item) === dateToInt(date)) : 
+        (dateToInt(item) >= dateToInt(startDate) && dateToInt(item) <= dateToInt(endDate))) !== -1).length / routineFillList.length * 100
     ,[routineFillList,page,date]);
 
     const totalFill = useMemo(() => {
@@ -55,6 +97,49 @@ const Attain: React.FC<Props> = ({globalFont,todoList,routineList,page,date,onDa
         (todoFillList.length + routineFillList.length) * 100
     },[todoFillList,routineFillList]);
 
+    useEffect(() => {
+        if (page === 1) {
+            aniTxt.setValue(0);
+            onAttainType(
+                typeNumber === 0 ? "date" :
+                typeNumber === 1 ? "week" :
+                typeNumber === 2 ? "month" :
+                typeNumber === 3 ? "year" :
+                "custom"
+            )
+            if ( typeNumber === 1) {
+                const setStartDate = new Date()
+                setStartDate.setDate(setStartDate.getDate()-( nowDate.getDay() === 0 ? 7 : nowDate.getDay() )+1)
+                onStartDate(setStartDate)
+                onEndDate(nowDate)
+            }
+        }
+    },[typeNumber])
+
+    useEffect(() => {
+        if(page === 0) {
+            if(type === "date") {
+                setTypeNumber(0)
+                scrollRef.current?.scrollTo({y: 0 ,animated:false})
+            }
+            if(type === "week") {
+                setTypeNumber(1)
+                scrollRef.current?.scrollTo({y: 45,animated:false})
+            }
+            if(type === "month") {
+                setTypeNumber(2)
+                scrollRef.current?.scrollTo({y: 90,animated:false})
+            }
+            if(type === "year") {
+                setTypeNumber(3)
+                scrollRef.current?.scrollTo({y: 135,animated:false})
+            }
+            if(type === "custom") {
+                setTypeNumber(4)
+                scrollRef.current?.scrollTo({y: 180,animated:false})
+            }
+        }
+    },[type,page])
 
     useEffect(() => {
         if ( page === 1 ) {
@@ -87,12 +172,59 @@ const Attain: React.FC<Props> = ({globalFont,todoList,routineList,page,date,onDa
             aniTot.setValue(0);
             aniTxt.setValue(0);
         }
-    },[page,date])
+    },[page,date,todoFillList,routineFillList])
 
     return(
         <ScrollView style={{flex:1}}>
-            <Text style={[styles.topTitle,{color:globalFont}]}>달성</Text>
+            <View style={{flexDirection:'row', alignItems:'center', justifyContent:'center',marginTop:5}}>
+                <View style={{marginTop:2}}>
+                    <Pressable
+                        disabled={typeNumber === 0 || typeLoading}
+                        onPress={() => {
+                            setTypeLoading(true)
+                            setTypeNumber(item => item - 1)
+                            scrollRef.current?.scrollTo({y: (typeNumber - 1) * 45,animated:true})
+                            setTimeout(() => setTypeLoading(false),400)
+                        }}
+                    >
+                        <Image source={require(  '../../assets/image/triangle.png')} 
+                            style={{width:15,height:15,opacity: typeNumber === 0 ? 0.3 : 1}}/>
+                    </Pressable>
+                    <Pressable
+                        disabled={typeNumber === 4 || typeLoading}
+                        onPress={() => {
+                            setTypeLoading(true)
+                            setTypeNumber(item => item + 1)
+                            scrollRef.current?.scrollTo({y: (typeNumber + 1) * 45,animated:true})
+                            setTimeout(() => setTypeLoading(false),400)
+                        }}
+                    >
+                        <Image source={require(  '../../assets/image/triangle.png')} 
+                            style={{width:15,height:15,opacity: typeNumber === 4 ? 0.3 : 1, transform:[{rotate : '180deg'}]}}/>
+                    </Pressable>
+                </View>
+                <View style={{width:60,height:45}}>
+                    <ScrollView
+                            ref={ scrollRef }
+                            pagingEnabled
+                            keyboardShouldPersistTaps='handled'
+                            showsVerticalScrollIndicator={false}
+                            onMomentumScrollEnd={typeChange}
+                            contentContainerStyle={{height: 225}}
+                            scrollEventThrottle={50}
+                            decelerationRate="fast"
+                        >
+                            <Text style={[styles.topTitle,{color:globalFont}]}>일간</Text>        
+                            <Text style={[styles.topTitle,{color:globalFont}]}>주간</Text>        
+                            <Text style={[styles.topTitle,{color:globalFont}]}>월간</Text>        
+                            <Text style={[styles.topTitle,{color:globalFont}]}>연간</Text>
+                            <Text style={[styles.topTitle,{color:globalFont}]}>선택</Text>        
+                    </ScrollView>
+                </View>
+            </View>
             <View style={styles.attainBox}>
+                { type === "date" ? 
+                // 일간
                 <View style={{flexDirection:"row",justifyContent:'space-evenly',alignItems:'center',marginBottom:5}}>
                     <Pressable
                         onPress={() => {
@@ -123,7 +255,48 @@ const Attain: React.FC<Props> = ({globalFont,todoList,routineList,page,date,onDa
                         <Image source={require(  '../../assets/image/arrow.png')} 
                             style={{width:25, height:25, marginTop: 15, transform:[{rotate : '90deg'}]}}/>
                     </Pressable> : <View style={{width:25,height:25}}/>}
-                </View>
+                </View> :
+                // 주간
+                <View style={{flexDirection:"row",justifyContent:'space-evenly',alignItems:'center',marginBottom:5}}>
+                    <Pressable
+                        onPress={() => {
+                            onStartDate(new Date(startDate.getTime() - 86400000 * 7))
+                            onEndDate(new Date(startDate.getTime() - 86400000))
+                            aniTxt.setValue(0);
+                        }}
+                    >
+                        <Image source={require(  '../../assets/image/arrow.png')} 
+                            style={{width:25,height:25, marginTop: 15, transform:[{rotate : '-90deg'}]}}/>
+                    </Pressable>
+                    <Pressable
+                        disabled={dateToInt(nowDate) - (86400000 * 7) < dateToInt(startDate)}
+                        onPress={() => {
+                            aniTxt.setValue(0);
+                            const setStartDate = new Date()
+                            setStartDate.setDate(setStartDate.getDate()-( nowDate.getDay() === 0 ? 7 : nowDate.getDay() )+1)
+                            onStartDate(setStartDate)
+                            onEndDate(nowDate)
+                        }}
+                    >
+                        <Text style={[styles.h2,{color:globalFont, marginTop: 10}]}>
+                            {   dateToInt(nowDate) - (86400000 * 7) < dateToInt(startDate) ? '이번주' :
+                                dateToInt(nowDate) - (86400000 * 14) < dateToInt(startDate)? '저번주' :
+                                `${startDate.getMonth()+1}월 ${startDate.getDate()}일 - ${endDate.getMonth()+1}월 ${endDate.getDate()}일`}
+                        </Text>
+                    </Pressable>
+                    { dateToInt(nowDate) - (86400000 * 7) < dateToInt(startDate) ? 
+                    <View style={{width:25,height:25}}/>
+                    : <Pressable
+                        onPress={() => {
+                            onStartDate(new Date(startDate.getTime() + 86400000 * 7))
+                            onEndDate(dateToInt(new Date(startDate.getTime() + 86400000 * 13)) > dateToInt(nowDate) ? nowDate : new Date(startDate.getTime() + 86400000 * 13))
+                            aniTxt.setValue(0);
+                        }}
+                    >
+                        <Image source={require(  '../../assets/image/arrow.png')} 
+                            style={{width:25, height:25, marginTop: 15, transform:[{rotate : '90deg'}]}}/>
+                    </Pressable>}
+                </View>}
                 <View style={{flexDirection:'row',justifyContent:'space-around'}}>
                     <AnimatedCircularProgress
                         ref={circleRef1}
@@ -132,13 +305,13 @@ const Attain: React.FC<Props> = ({globalFont,todoList,routineList,page,date,onDa
                         rotation={0}
                         lineCap="round"
                         fill={0}
-                        tintColor="tomato"
-                        backgroundColor="snow"
+                        tintColor="#2E8DFF"
+                        backgroundColor="aliceblue"
                     >
                     {
                         (fill) => 
                             <View style={{alignItems:'center'}}>
-                                <Text style={{fontWeight:'bold', color:globalFont}}>계획</Text>
+                                <Text style={{fontWeight:'bold', color:globalFont}}>목표</Text>
                                 <Text style={{fontWeight:'bold', color:globalFont}}>{ todoFillList.length === 0 ? '없음' : Math.floor(fill)+'%' }</Text>
                             </View>
                     }    
@@ -150,8 +323,8 @@ const Attain: React.FC<Props> = ({globalFont,todoList,routineList,page,date,onDa
                         rotation={0}
                         lineCap="round"
                         fill={0}
-                        tintColor="#2E8DFF"
-                        backgroundColor="aliceblue"
+                        tintColor="tomato"
+                        backgroundColor="snow"
                     >
                     {
                         (fill) => 
@@ -163,7 +336,7 @@ const Attain: React.FC<Props> = ({globalFont,todoList,routineList,page,date,onDa
                     </AnimatedCircularProgress>
                 </View>
                 <View style={{paddingHorizontal:30,marginTop:15}}>
-                    <Text style={{fontWeight:'bold', color:globalFont,marginLeft:10,marginBottom:2}}>총 달성도</Text>
+                    <Text style={{fontWeight:'bold', color:globalFont,marginLeft:10,marginBottom:2}}>총 달성률</Text>
                     <View style={{width:'100%',backgroundColor:'whitesmoke',borderRadius:Math.floor(windowWidth*0.5 - 50) * 0.5,overflow:'hidden'}}>
                         <Animated.View style={{
                             height:Math.floor(windowWidth*0.5 - 50) * 0.25,
@@ -175,10 +348,10 @@ const Attain: React.FC<Props> = ({globalFont,todoList,routineList,page,date,onDa
                     </View>
                 </View>
             </View>
-            <View style={[styles.attainBox,{marginBottom:10}]}>
-                <Text style={[styles.h2,{color:globalFont,marginLeft:10}]}>달성 목록</Text>
-                <View style={{flexDirection:'row',justifyContent:'space-around'}}>
-                    <Text style={[styles.h4,{color:globalFont}]}>계획</Text>
+            <View style={[styles.attainBox,{marginBottom:10,gap:10}]}>
+                <Text style={[styles.h2,{color:globalFont,marginLeft:15,marginTop:5}]}>달성</Text>
+                <View style={{flexDirection:'row',justifyContent:'space-around',marginTop:5}}>
+                    <Text style={[styles.h4,{color:globalFont}]}>목표</Text>
                     <Text style={[styles.h4,{color:globalFont}]}>루틴</Text>
                 </View>
                 <View style={{flexDirection:'row',justifyContent:'center',gap:10,paddingHorizontal:10}}>
@@ -218,17 +391,19 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
     },
     topTitle : {
+        width: 60,
+        height: 45,
+        textAlignVertical:'center',
+        textAlign: 'center',
         fontSize: 25,
         fontWeight: 'bold',
-        margin : 20,
-        marginBottom: 0
     },
     attainBox : {
         paddingHorizontal: 5,
         paddingTop: 10,
         paddingBottom: 40,
         marginHorizontal: 10,
-        marginTop:20,
+        marginTop:10,
         elevation: 5,
         backgroundColor: 'white',
         borderRadius: 20,
@@ -237,14 +412,14 @@ const styles = StyleSheet.create({
     listBox : {
         flex: 1,
         height:200,
-        borderWidth: 1,
-        borderColor: 'lightgray',
-        borderRadius: 3
+        borderTopWidth: 1,
+        borderBottomWidth: 1,
+        borderColor: 'gray',
     },
     items : {
         padding: 10,
         borderBottomWidth: 1,
-        borderBottomColor: 'lightgray'
+        borderBottomColor: 'gray'
     }
 });
 export default Attain;

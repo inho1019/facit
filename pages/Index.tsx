@@ -33,7 +33,7 @@ export type RoutineDTO = {
 PushNotification.createChannel(
     {
         channelId: "todo", 
-        channelName: "계획 알람",
+        channelName: "목표 알람",
         importance: 4, 
         vibrate: true, 
     },
@@ -82,6 +82,15 @@ const Index: React.FC = () => {
     const onAttainType = (type : AttainType) => {
         setAttainType(type)
     }
+
+    const onAttain = (date : Date) => {
+        setDate(date)
+        setAttainType("date")
+        requestAnimationFrame(() => {
+            setPage(1)
+            scrollRef.current?.scrollTo({x: windowWidth, animated: true})
+        })
+    }
     //////////////////////////////////////////////////
 
     const [key,setKey] = useState(false)
@@ -98,7 +107,7 @@ const Index: React.FC = () => {
     const [todoModal,setTodoModal] = useState<boolean>(false)
     const [todoModalId,setTodoModalId] = useState<number>(-1)
 
-    const [rouDate,setRouDate] = useState<Date>(new Date())
+    const [rouDate,setRoutineDate] = useState<Date>(new Date())
     const [routineModal,setRoutineModal] = useState<boolean>(false)
     const [routineModalId,setRoutineModalId] = useState<number>(-1)
 
@@ -150,14 +159,16 @@ const Index: React.FC = () => {
                     setTodoModalId(parseInt(notification.id))
                 }
                 if(parseInt(notification.id) === 0) {
-                    console.log("asdfasfasdf")
                     requestAnimationFrame(() => {
+                        const newDate = new Date()
+                        newDate.setDate(newDate.getDate() - 1)
                         scrollRef.current?.scrollTo({x: windowWidth, animated: true})
+                        setDate(newDate)
                         setPage(1)
                     })
                 }
                 if(parseInt(notification.id) < 0) {
-                    setRouDate(new Date())
+                    setRoutineDate(new Date())
                     setRoutineModal(true)
                     setRoutineModalId(-parseInt(notification.id))
                 }
@@ -306,12 +317,12 @@ const Index: React.FC = () => {
 
     const onTodoAlarm = (alarmId : number,newDate : Date) => {
         const alarmTodo = todoList.find(fd => fd.id === alarmId);
-        const message = alarmTodo ? alarmTodo.content : "계획";
+        const message = alarmTodo ? alarmTodo.content : "목표";
 
         PushNotification.localNotificationSchedule({
             channelId: "todo",
             tag: "todo",
-            title: newDate.getHours().toString().padStart(2, '0') + "시 " + newDate.getMinutes().toString().padStart(2, '0') + "분 계획 알림",
+            title: newDate.getHours().toString().padStart(2, '0') + "시 " + newDate.getMinutes().toString().padStart(2, '0') + "분 목표 알림",
             message: message,
             date: newDate,
             vibration: 3000,
@@ -478,7 +489,7 @@ const Index: React.FC = () => {
     }
 
     const closeRoutineModal = () => {
-        setRouDate(new Date())
+        setRoutineDate(new Date())
         setRoutineModal(false)
         setRoutineModalId(-1)
     }
@@ -537,13 +548,14 @@ const Index: React.FC = () => {
                     decelerationRate="fast"
                 >
                     <Main globalFont={globalFont} keys={key} routineId={routineId} later={later} latId={latId}
-                        onSetLatId={onSetLatId} onSetLater={onSetLater} 
+                        onSetLatId={onSetLatId} onSetLater={onSetLater} onAttain={onAttain}
                         onTodoAlarm={onTodoAlarm} onCancelAlarm={onCancelAlarm} onTodoDTO={onTodoDTO} onTodoCheck={onTodoCheck}
                         onRoutineCheck={onRoutineCheck} onMove={onMove} onTodoDelete={onTodoDelete} onRoutineDTO={onRoutineDTO}
                         onRoutineEnd={onRoutineEnd} onRoutineRe={onRoutineRe} onRoutineUpdate={onRoutineUpdate} 
                         todoList={todoList} routineList={routineList}/>
                     <Attain globalFont={globalFont} todoList={todoList} routineList={routineList} date={date} page={page}
-                        onDate={onDate}/>
+                        type={attainType} startDate={startDate} endDate={endDate} onStartDate={onStartDate} onEndDate={onEndDate}
+                        onDate={onDate} onAttainType={onAttainType}/>
                 </ScrollView>
                 <Modal
                     animationType="fade"
@@ -552,7 +564,7 @@ const Index: React.FC = () => {
                 >
                     <View style={{flex:1,justifyContent:'center',alignItems:'center',backgroundColor:'#00000010'}}>
                         <View style={styles.rouModal}>
-                            <Text style={[styles.modalTitle,{color:globalFont}]}>계획 확인</Text>
+                            <Text style={[styles.modalTitle,{color:globalFont}]}>목표 확인</Text>
                             <Text style={{color: globalFont,fontSize:16,paddingVertical:10,paddingHorizontal:20}}>
                                 {todoList.find(fd => fd.id === todoModalId)?.content}
                             </Text>
