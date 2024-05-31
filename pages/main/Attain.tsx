@@ -487,8 +487,9 @@ const Attain: React.FC<Props> = ({globalFont,todoList,routineList,page,date,star
                 <View style={{flexDirection:'row',justifyContent:'center',alignItems:'center',paddingHorizontal:10,gap:15,marginTop:10}}>
                     <Text style={[styles.h2,{color:globalFont, marginLeft: 5,marginBottom:10,flex:1}]}>달성</Text>
                     <TextInput 
-                        style={{backgroundColor:'white',padding:5,flex:1,marginVertical:5,borderWidth:1,borderColor:'darkgray'}}
+                        style={{backgroundColor:'white',padding:5,flex:1,marginVertical:5,marginLeft:2,borderWidth:1,borderColor:'darkgray',color:globalFont}}
                         placeholder="검색"
+                        placeholderTextColor="gray"
                         onChangeText={(text) => setSearch(text)}
                     />
                 </View>
