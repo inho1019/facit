@@ -94,7 +94,7 @@ const Index: React.FC = () => {
     }
     //////////////////////////////////////////////////
 
-    const [key,setKey] = useState(false)
+    const [key,setKey] = useState<boolean>(false)
     const [todoList,setTodoList] = useState<TodoDTO[]>([])
     const [routineList,setRoutineList] = useState<RoutineDTO[]>([])
     const [todoId,setTodoId] = useState<number>(1)
@@ -554,7 +554,7 @@ const Index: React.FC = () => {
                         onRoutineCheck={onRoutineCheck} onMove={onMove} onTodoDelete={onTodoDelete} onRoutineDTO={onRoutineDTO}
                         onRoutineEnd={onRoutineEnd} onRoutineRe={onRoutineRe} onRoutineUpdate={onRoutineUpdate} 
                         todoList={todoList} routineList={routineList}/>
-                    <Attain globalFont={globalFont} todoList={todoList} routineList={routineList} date={date} page={page}
+                    <Attain globalFont={globalFont} todoList={todoList} routineList={routineList} date={date} page={page} keys={key}
                         type={attainType} startDate={startDate} endDate={endDate} onStartDate={onStartDate} onEndDate={onEndDate}
                         onDate={onDate} onAttainType={onAttainType}/>
                     <Setting/>

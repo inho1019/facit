@@ -99,7 +99,7 @@ const Main: React.FC<Props> = ({globalFont,keys,todoList,routineList,routineId,l
     const [calHeight,setCalHeight] = useState<number>(300)
 
     const onViewLayout = (event : any) => {
-            setCalHeight(event.nativeEvent.layout.height);
+        setCalHeight(event.nativeEvent.layout.height);
     };
 
     ///////////애니메이션///////////////

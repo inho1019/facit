@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Animated, Dimensions, Easing, Image, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Animated, Dimensions, Easing, Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { AttainType, RoutineDTO, TodoDTO } from "../Index";
 import { AnimatedCircularProgress } from 'react-native-circular-progress';
 
@@ -12,6 +12,7 @@ interface Props {
     date: Date;
     startDate: Date;
     endDate: Date;
+    keys: boolean;
     onDate: (date: Date) => void;
     onStartDate: (date: Date) => void;
     onEndDate: (date: Date) => void;
@@ -19,7 +20,7 @@ interface Props {
 }
    
 
-const Attain: React.FC<Props> = ({globalFont,todoList,routineList,page,date,startDate,endDate,type,onDate,onAttainType,onStartDate,onEndDate}) => {
+const Attain: React.FC<Props> = ({globalFont,todoList,routineList,page,date,startDate,endDate,type,keys,onDate,onAttainType,onStartDate,onEndDate}) => {
 
     const nowDate = useMemo(() => new Date(),[page]);
 
@@ -30,6 +31,13 @@ const Attain: React.FC<Props> = ({globalFont,todoList,routineList,page,date,star
 
     const aniTot = useRef(new Animated.Value(0)).current
     const aniTxt = useRef(new Animated.Value(0)).current
+    const aniBox = useRef(new Animated.Value(1)).current
+
+    const [boxHeight,setBoxHeight] = useState<number>(0)
+
+    const onViewLayout = (event : any) => {
+        setBoxHeight(event.nativeEvent.layout.height);
+    };
 
     const dateToInt = (date : Date | string) => {
         const newDate = new Date(date)
@@ -55,6 +63,8 @@ const Attain: React.FC<Props> = ({globalFont,todoList,routineList,page,date,star
 
     const [typeNumber,setTypeNumber] = useState<number>(0); 
     const [typeLoading,setTypeLoading] = useState<boolean>(false);
+
+    const [search,setSearch] = useState<string>('');
 
     const typeChange = (event:any) => {
         const offsetY = event.nativeEvent.contentOffset.y;
@@ -236,6 +246,24 @@ const Attain: React.FC<Props> = ({globalFont,todoList,routineList,page,date,star
         }
     },[page,date,todoFillList,routineFillList])
 
+    useEffect(() => {
+        if (keys) {
+            Animated.timing(aniBox, {
+                toValue: 0,
+                duration: 300,
+                useNativeDriver: false,
+                easing: Easing.out(Easing.ease)
+            }).start();
+        } else {
+            Animated.timing(aniBox, {
+                toValue: 1,
+                duration: 300,
+                useNativeDriver: false,
+                easing: Easing.out(Easing.ease)
+            }).start();
+        }
+    },[keys])
+
     return(
         <View style={{flex:1}}>
             <View style={{flexDirection:'row', alignItems:'center', justifyContent:'center',marginTop:5}}>
@@ -284,198 +312,211 @@ const Attain: React.FC<Props> = ({globalFont,todoList,routineList,page,date,star
                     </ScrollView>
                 </View>
             </View>
-            <View style={styles.attainBox}>
-                { type === "date" ? 
-                // 일간
-                <View style={{flexDirection:"row",justifyContent:'space-evenly',alignItems:'center',marginBottom:5}}>
-                    <Pressable
-                        onPress={() => {
-                            onDate(new Date(date.getTime() - 86400000))
-                            aniTxt.setValue(0);
-                        }}
-                    >
-                        <Image source={require(  '../../assets/image/arrow.png')} 
-                            style={{width:25,height:25, marginTop: 15, transform:[{rotate : '-90deg'}]}}/>
-                    </Pressable>
-                    <Pressable
-                        disabled={dateToInt(date) === dateToInt(new Date())}
-                        onPress={() => onDate(new Date())}
-                    >
-                        <Text style={[styles.h2,{color:globalFont, marginTop: 10}]}>
-                            {   dateToInt(date) === dateToInt(new Date()) ? '오늘' :
-                                dateToInt(date) === (dateToInt(new Date())) - 86400000 ? '어제' :
-                                `${date.getMonth()+1}월 ${date.getDate()}일 ${date.getDay() === 0 ? '일' : date.getDay() === 1 ? '월' : 
-                                date.getDay() === 2 ? '화' : date.getDay() === 3 ? '수' : date.getDay() === 4 ? '목' : date.getDay() === 5 ? '금' : '토'}요일`}
-                        </Text>
-                    </Pressable>
-                    { dateToInt(date) < dateToInt(new Date) ? <Pressable
-                        onPress={() => {
-                            onDate(new Date(date.getTime() + 86400000))
-                            aniTxt.setValue(0);
-                        }}
-                    >
-                        <Image source={require(  '../../assets/image/arrow.png')} 
-                            style={{width:25, height:25, marginTop: 15, transform:[{rotate : '90deg'}]}}/>
-                    </Pressable> : <View style={{width:25,height:25}}/>}
-                </View> :
-                // 주간
-                type === "week" ? 
-                <View style={{flexDirection:"row",justifyContent:'space-evenly',alignItems:'center',marginBottom:5}}>
-                    <Pressable
-                        onPress={() => {
-                            onStartDate(new Date(startDate.getTime() - 86400000 * 7))
-                            onEndDate(new Date(startDate.getTime() - 86400000))
-                            aniTxt.setValue(0);
-                        }}
-                    >
-                        <Image source={require(  '../../assets/image/arrow.png')} 
-                            style={{width:25,height:25, marginTop: 15, transform:[{rotate : '-90deg'}]}}/>
-                    </Pressable>
-                    <Pressable
-                        disabled={dateToInt(nowDate) - (86400000 * 7) < dateToInt(startDate)}
-                        onPress={() => {
-                            aniTxt.setValue(0);
-                            const setStartDate = new Date()
-                            setStartDate.setDate(setStartDate.getDate()-( nowDate.getDay() === 0 ? 7 : nowDate.getDay() )+1)
-                            onStartDate(setStartDate)
-                            onEndDate(nowDate)
-                        }}
-                    >
-                        <Text style={[styles.h2,{color:globalFont, marginTop: 10}]}>
-                            {   dateToInt(nowDate) - (86400000 * 7) < dateToInt(startDate) ? '이번주' :
-                                dateToInt(nowDate) - (86400000 * 14) < dateToInt(startDate)? '저번주' :
-                                `${startDate.getMonth()+1}월 ${startDate.getDate()}일 - ${endDate.getMonth()+1}월 ${endDate.getDate()}일`}
-                        </Text>
-                    </Pressable>
-                    { dateToInt(nowDate) - (86400000 * 7) < dateToInt(startDate) ? 
-                    <View style={{width:25,height:25}}/>
-                    : <Pressable
-                        onPress={() => {
-                            onStartDate(new Date(startDate.getTime() + 86400000 * 7))
-                            onEndDate(dateToInt(new Date(startDate.getTime() + 86400000 * 13)) > dateToInt(nowDate) ? nowDate : new Date(startDate.getTime() + 86400000 * 13))
-                            aniTxt.setValue(0);
-                        }}
-                    >
-                        <Image source={require(  '../../assets/image/arrow.png')} 
-                            style={{width:25, height:25, marginTop: 15, transform:[{rotate : '90deg'}]}}/>
-                    </Pressable>}
-                </View> :
-                // 월간
-                <View style={{flexDirection:"row",justifyContent:'space-evenly',alignItems:'center',marginBottom:5}}>
-                    <Pressable
-                        onPress={() => {
-                            const setStartDate = new Date(startDate.getFullYear(), startDate.getMonth() - 1, 1);
-                            onStartDate(setStartDate)
-                            const setEndDate = new Date(startDate.getFullYear(), startDate.getMonth(), 0);
-                            onEndDate(setEndDate)
-                        }}
-                    >
-                        <Image source={require(  '../../assets/image/arrow.png')} 
-                            style={{width:25,height:25, marginTop: 15, transform:[{rotate : '-90deg'}]}}/>
-                    </Pressable>
-                    <Pressable
-                        disabled={dateToInt(nowDate) - (86400000 * 7) < dateToInt(startDate)}
-                        onPress={() => {
-                            aniTxt.setValue(0);
-                            const setStartDate = new Date(nowDate.getFullYear(), nowDate.getMonth(), 1);
-                            onStartDate(setStartDate)
-                            onEndDate(nowDate)
-                        }}
-                    >
-                        <Text style={[styles.h2,{color:globalFont, marginTop: 10}]}>
-                            { ( startDate.getFullYear() === new Date().getFullYear() && startDate.getMonth() === new Date().getMonth() ) ? 
-                                '이번달' : `${startDate.getFullYear()}년 ${startDate.getMonth() + 1}월`
-                            }
-                        </Text>
-                    </Pressable>
-                    { ( startDate.getFullYear() === new Date().getFullYear() && startDate.getMonth() === new Date().getMonth() ) ? 
-                    <View style={{width:25,height:25}}/>
-                    : <Pressable
-                        onPress={() => {
-                            const setStartDate = new Date(startDate.getFullYear(), startDate.getMonth() + 1, 1);
-                            onStartDate(setStartDate)
-                            const setEndDate = new Date(startDate.getFullYear(), startDate.getMonth() + 2, 0);
-                            onEndDate(dateToInt(setEndDate) > dateToInt(nowDate) ? nowDate : setEndDate)
-                        }}
-                    >
-                        <Image source={require(  '../../assets/image/arrow.png')} 
-                            style={{width:25, height:25, marginTop: 15, transform:[{rotate : '90deg'}]}}/>
-                    </Pressable>}
-                </View>}
-                <View style={{flexDirection:'row',justifyContent:'space-around'}}>
-                    <AnimatedCircularProgress
-                        ref={circleRef1}
-                        size={Math.floor(windowWidth*0.5 - 50)}
-                        width={Math.floor(windowWidth*0.5 - 50) * 0.25}
-                        rotation={0}
-                        lineCap="round"
-                        fill={0}
-                        tintColor="#2E8DFF"
-                        backgroundColor="aliceblue"
-                    >
-                    {
-                        (fill) => 
-                            <View style={{alignItems:'center'}}>
-                                <Text style={{fontWeight:'bold', color:globalFont}}>목표</Text>
-                                <Text style={{fontWeight:'bold', color:globalFont}}>{ todoFillList.length === 0 ? '없음' : Math.floor(fill)+'%' }</Text>
-                            </View>
-                    }    
-                    </AnimatedCircularProgress>
-                    <AnimatedCircularProgress
-                        ref={circleRef2}
-                        size={Math.floor(windowWidth * 0.5 - 50)}
-                        width={Math.floor(windowWidth*0.5 - 50) * 0.25}
-                        rotation={0}
-                        lineCap="round"
-                        fill={0}
-                        tintColor="tomato"
-                        backgroundColor="snow"
-                    >
-                    {
-                        (fill) => 
-                            <View style={{alignItems:'center'}}>
-                                <Text style={{fontWeight:'bold', color:globalFont}}>루틴</Text>
-                                <Text style={{fontWeight:'bold', color:globalFont}}>{ routineFillList.length === 0 ? '없음' : Math.floor(fill)+'%' }</Text>
-                            </View>
-                    }    
-                    </AnimatedCircularProgress>
-                </View>
-                <View style={{paddingHorizontal:30,marginTop:15}}>
-                    <Text style={{fontWeight:'bold', color:globalFont,marginLeft:10,marginBottom:2}}>총 달성률</Text>
-                    <View style={{width:'100%',backgroundColor:'whitesmoke',borderRadius:Math.floor(windowWidth*0.5 - 50) * 0.5,overflow:'hidden'}}>
-                        <Animated.View style={{
-                            height:Math.floor(windowWidth*0.5 - 50) * 0.25,
-                            width: aniTot,
-                            backgroundColor:'darkgray',
-                            borderRadius:Math.floor(windowWidth*0.5 - 50) * 0.5}}>
-                                <Animated.Text style={{width:50,fontWeight:'bold', opacity: aniTxt, color:globalFont, position:'absolute', height:Math.floor(windowWidth*0.5 - 50) * 0.25,left: 10,textAlignVertical:'center'}}>{Math.floor(totalFill)}%</Animated.Text>
-                        </Animated.View>
+            <Animated.View style={[styles.attainBox,{height: aniBox.interpolate({ inputRange: [0, 1], outputRange: [75,boxHeight]})}]}>
+                <View style={{ paddingTop: 10, paddingBottom: 40, gap: 20}} onLayout={onViewLayout}>
+                    { type === "date" ? 
+                    // 일간
+                    <View style={{flexDirection:"row",justifyContent:'space-evenly',alignItems:'center',marginBottom:5}}>
+                        <Pressable
+                            onPress={() => {
+                                onDate(new Date(date.getTime() - 86400000))
+                                aniTxt.setValue(0);
+                            }}
+                        >
+                            <Image source={require(  '../../assets/image/arrow.png')} 
+                                style={{width:25,height:25, marginTop: 15, transform:[{rotate : '-90deg'}]}}/>
+                        </Pressable>
+                        <Pressable
+                            disabled={dateToInt(date) === dateToInt(new Date())}
+                            onPress={() => onDate(new Date())}
+                        >
+                            <Text style={[styles.h2,{color:globalFont, marginTop: 10}]}>
+                                {   dateToInt(date) === dateToInt(new Date()) ? '오늘' :
+                                    dateToInt(date) === (dateToInt(new Date())) - 86400000 ? '어제' :
+                                    `${date.getMonth()+1}월 ${date.getDate()}일 ${date.getDay() === 0 ? '일' : date.getDay() === 1 ? '월' : 
+                                    date.getDay() === 2 ? '화' : date.getDay() === 3 ? '수' : date.getDay() === 4 ? '목' : date.getDay() === 5 ? '금' : '토'}요일`}
+                            </Text>
+                        </Pressable>
+                        { dateToInt(date) < dateToInt(new Date) ? <Pressable
+                            onPress={() => {
+                                onDate(new Date(date.getTime() + 86400000))
+                                aniTxt.setValue(0);
+                            }}
+                        >
+                            <Image source={require(  '../../assets/image/arrow.png')} 
+                                style={{width:25, height:25, marginTop: 15, transform:[{rotate : '90deg'}]}}/>
+                        </Pressable> : <View style={{width:25,height:25}}/>}
+                    </View> :
+                    // 주간
+                    type === "week" ? 
+                    <View style={{flexDirection:"row",justifyContent:'space-evenly',alignItems:'center',marginBottom:5}}>
+                        <Pressable
+                            onPress={() => {
+                                onStartDate(new Date(startDate.getTime() - 86400000 * 7))
+                                onEndDate(new Date(startDate.getTime() - 86400000))
+                                aniTxt.setValue(0);
+                            }}
+                        >
+                            <Image source={require(  '../../assets/image/arrow.png')} 
+                                style={{width:25,height:25, marginTop: 15, transform:[{rotate : '-90deg'}]}}/>
+                        </Pressable>
+                        <Pressable
+                            disabled={dateToInt(nowDate) - (86400000 * 7) < dateToInt(startDate)}
+                            onPress={() => {
+                                aniTxt.setValue(0);
+                                const setStartDate = new Date()
+                                setStartDate.setDate(setStartDate.getDate()-( nowDate.getDay() === 0 ? 7 : nowDate.getDay() )+1)
+                                onStartDate(setStartDate)
+                                onEndDate(nowDate)
+                            }}
+                        >
+                            <Text style={[styles.h2,{color:globalFont, marginTop: 10}]}>
+                                {   dateToInt(nowDate) - (86400000 * 7) < dateToInt(startDate) ? '이번주' :
+                                    dateToInt(nowDate) - (86400000 * 14) < dateToInt(startDate)? '저번주' :
+                                    `${startDate.getMonth()+1}월 ${startDate.getDate()}일 - ${endDate.getMonth()+1}월 ${endDate.getDate()}일`}
+                            </Text>
+                        </Pressable>
+                        { dateToInt(nowDate) - (86400000 * 7) < dateToInt(startDate) ? 
+                        <View style={{width:25,height:25}}/>
+                        : <Pressable
+                            onPress={() => {
+                                onStartDate(new Date(startDate.getTime() + 86400000 * 7))
+                                onEndDate(dateToInt(new Date(startDate.getTime() + 86400000 * 13)) > dateToInt(nowDate) ? nowDate : new Date(startDate.getTime() + 86400000 * 13))
+                                aniTxt.setValue(0);
+                            }}
+                        >
+                            <Image source={require(  '../../assets/image/arrow.png')} 
+                                style={{width:25, height:25, marginTop: 15, transform:[{rotate : '90deg'}]}}/>
+                        </Pressable>}
+                    </View> :
+                    // 월간
+                    <View style={{flexDirection:"row",justifyContent:'space-evenly',alignItems:'center',marginBottom:5}}>
+                        <Pressable
+                            onPress={() => {
+                                const setStartDate = new Date(startDate.getFullYear(), startDate.getMonth() - 1, 1);
+                                onStartDate(setStartDate)
+                                const setEndDate = new Date(startDate.getFullYear(), startDate.getMonth(), 0);
+                                onEndDate(setEndDate)
+                            }}
+                        >
+                            <Image source={require(  '../../assets/image/arrow.png')} 
+                                style={{width:25,height:25, marginTop: 15, transform:[{rotate : '-90deg'}]}}/>
+                        </Pressable>
+                        <Pressable
+                            disabled={dateToInt(nowDate) - (86400000 * 7) < dateToInt(startDate)}
+                            onPress={() => {
+                                aniTxt.setValue(0);
+                                const setStartDate = new Date(nowDate.getFullYear(), nowDate.getMonth(), 1);
+                                onStartDate(setStartDate)
+                                onEndDate(nowDate)
+                            }}
+                        >
+                            <Text style={[styles.h2,{color:globalFont, marginTop: 10}]}>
+                                { ( startDate.getFullYear() === new Date().getFullYear() && startDate.getMonth() === new Date().getMonth() ) ? 
+                                    '이번달' : `${startDate.getFullYear()}년 ${startDate.getMonth() + 1}월`
+                                }
+                            </Text>
+                        </Pressable>
+                        { ( startDate.getFullYear() === new Date().getFullYear() && startDate.getMonth() === new Date().getMonth() ) ? 
+                        <View style={{width:25,height:25}}/>
+                        : <Pressable
+                            onPress={() => {
+                                const setStartDate = new Date(startDate.getFullYear(), startDate.getMonth() + 1, 1);
+                                onStartDate(setStartDate)
+                                const setEndDate = new Date(startDate.getFullYear(), startDate.getMonth() + 2, 0);
+                                onEndDate(dateToInt(setEndDate) > dateToInt(nowDate) ? nowDate : setEndDate)
+                            }}
+                        >
+                            <Image source={require(  '../../assets/image/arrow.png')} 
+                                style={{width:25, height:25, marginTop: 15, transform:[{rotate : '90deg'}]}}/>
+                        </Pressable>}
+                    </View>}
+                    <View style={{flexDirection:'row',justifyContent:'space-around'}}>
+                        <AnimatedCircularProgress
+                            ref={circleRef1}
+                            size={Math.floor(windowWidth*0.5 - 50)}
+                            width={Math.floor(windowWidth*0.5 - 50) * 0.25}
+                            rotation={0}
+                            lineCap="round"
+                            fill={0}
+                            tintColor="#2E8DFF"
+                            backgroundColor="aliceblue"
+                        >
+                        {
+                            (fill) => 
+                                <View style={{alignItems:'center'}}>
+                                    <Text style={{fontWeight:'bold', color:globalFont}}>목표</Text>
+                                    <Text style={{fontWeight:'bold', color:globalFont}}>{ todoFillList.length === 0 ? '없음' : Math.floor(fill)+'%' }</Text>
+                                </View>
+                        }    
+                        </AnimatedCircularProgress>
+                        <AnimatedCircularProgress
+                            ref={circleRef2}
+                            size={Math.floor(windowWidth * 0.5 - 50)}
+                            width={Math.floor(windowWidth*0.5 - 50) * 0.25}
+                            rotation={0}
+                            lineCap="round"
+                            fill={0}
+                            tintColor="tomato"
+                            backgroundColor="snow"
+                        >
+                        {
+                            (fill) => 
+                                <View style={{alignItems:'center'}}>
+                                    <Text style={{fontWeight:'bold', color:globalFont}}>루틴</Text>
+                                    <Text style={{fontWeight:'bold', color:globalFont}}>{ routineFillList.length === 0 ? '없음' : Math.floor(fill)+'%' }</Text>
+                                </View>
+                        }    
+                        </AnimatedCircularProgress>
+                    </View>
+                    <View style={{paddingHorizontal:30,marginTop:15}}>
+                        <Text style={{fontWeight:'bold', color:globalFont,marginLeft:10,marginBottom:2}}>총 달성률</Text>
+                        <View style={{width:'100%',backgroundColor:'whitesmoke',borderRadius:Math.floor(windowWidth*0.5 - 50) * 0.5,overflow:'hidden'}}>
+                            <Animated.View style={{
+                                height:Math.floor(windowWidth*0.5 - 50) * 0.25,
+                                width: aniTot,
+                                backgroundColor:'darkgray',
+                                borderRadius:Math.floor(windowWidth*0.5 - 50) * 0.5}}>
+                                    <Animated.Text style={{width:50,fontWeight:'bold', opacity: aniTxt, color:globalFont, position:'absolute', height:Math.floor(windowWidth*0.5 - 50) * 0.25,left: 10,textAlignVertical:'center'}}>{Math.floor(totalFill)}%</Animated.Text>
+                            </Animated.View>
+                        </View>
                     </View>
                 </View>
-            </View>
-            <View style={[styles.attainBox,{marginBottom:10,gap:10,flex:1,paddingHorizontal:0,paddingBottom:35}]}>
-                <Text style={[styles.h2,{color:globalFont,marginLeft:15}]}>달성</Text>
-                <View style={{flexDirection:'row',justifyContent:'space-around'}}>
-                    <Text style={[styles.h4,{color:globalFont}]}>목표</Text>
-                    <Text style={[styles.h4,{color:globalFont}]}>루틴</Text>
+            </Animated.View>
+            <View style={{flex:1,marginBottom:10}}>
+                <View style={{flexDirection:'row',justifyContent:'center',alignItems:'center',paddingHorizontal:10,gap:15,marginTop:10}}>
+                    <Text style={[styles.h2,{color:globalFont, marginLeft: 5,marginBottom:10,flex:1}]}>달성</Text>
+                    <TextInput 
+                        style={{backgroundColor:'white',padding:5,flex:1,marginVertical:5,borderWidth:1,borderColor:'darkgray'}}
+                        placeholder="검색"
+                        onChangeText={(text) => setSearch(text)}
+                    />
                 </View>
-                <View style={{flexDirection:'row',justifyContent:'center',flex:1}}>
-                    <ScrollView style={[styles.listBox,{borderRightWidth:0.6}]}>
+                <View style={{flexDirection:'row',paddingHorizontal:10,gap:10}}>
+                    <View style={{flex:1,backgroundColor:'whitesmoke',paddingVertical:5}}>
+                        <Text style={[styles.h4,{color:globalFont,textAlign:'center'}]}>목표</Text>
+                    </View>
+                    <View style={{flex:1,backgroundColor:'whitesmoke',paddingVertical:5}}>
+                        <Text style={[styles.h4,{color:globalFont,textAlign:'center'}]}>루틴</Text>
+                    </View>
+                </View>
+                <View style={{flexDirection:'row',justifyContent:'center',flex:1,paddingHorizontal:10,gap:10}}>
+                    <ScrollView style={styles.listBox}>
                         {
-                            todoFillList.filter(todo => todo.success).map((item,index) => 
+                            todoFillList.filter(todo => todo.content.includes(search) && todo.success).map((item,index) => 
                             <Animated.View key={`${item}_${index}`} style={[styles.items,{opacity:aniTxt}]}>
                                 <Text style={{color:globalFont}}>{item.content}</Text>
                             </Animated.View>)
                         }
                     </ScrollView>
-                    <ScrollView style={[styles.listBox,{borderLeftWidth:0.6}]}>
+                    <ScrollView style={styles.listBox}>
                         {
                             type === 'date' ?
-                            routineFillList.filter(rou => rou.success.findIndex(item => dateToInt(item) === dateToInt(date)) !== -1).map((item,index) => 
+                            routineFillList.filter(rou => rou.content.includes(search) && rou.success.findIndex(item => dateToInt(item) === dateToInt(date)) !== -1).map((item,index) => 
                             <Animated.View key={`${item}_${index}`} style={[styles.items,{opacity:aniTxt}]}>
                                 <Text style={{color:globalFont}}>{item.content}</Text>
                             </Animated.View>) :
-                            routineFillList.map((item,index) => 
+                            routineFillList.filter(rou => rou.content.includes(search)).map((item,index) => 
                             <Animated.View key={`${item}_${index}`} style={[styles.items,{opacity:aniTxt}]}>
                                 <Text style={{color:globalFont}}>{item.content}</Text>
                             </Animated.View>)
@@ -489,7 +530,7 @@ const Attain: React.FC<Props> = ({globalFont,todoList,routineList,page,date,star
 
 const styles = StyleSheet.create({
     h2 : {
-        fontSize: 23,
+        fontSize: 22,
         fontWeight: 'bold',
     },
     h3 : {
@@ -497,7 +538,7 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
     },
     h4 : {
-        fontSize: 16,
+        fontSize: 17,
         fontWeight: 'bold',
     },
     topTitle : {
@@ -510,25 +551,22 @@ const styles = StyleSheet.create({
     },
     attainBox : {
         paddingHorizontal: 5,
-        paddingTop: 10,
-        paddingBottom: 40,
         marginHorizontal: 10,
         marginTop:10,
         elevation: 5,
         backgroundColor: 'white',
         borderRadius: 20,
-        gap: 20
+        overflow: 'hidden',
     },
     listBox : {
         flex: 1,
         borderTopWidth: 1,
-        borderBottomWidth: 1,
-        borderColor: 'lightgray',
+        borderColor: 'gray',
     },
     items : {
         padding: 10,
         borderBottomWidth: 1,
-        borderBottomColor: 'lightgray'
+        borderBottomColor: 'gray'
     }
 });
 export default Attain;
