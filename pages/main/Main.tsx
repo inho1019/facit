@@ -31,6 +31,8 @@ interface Props {
     routineId : number;
     later : boolean;
     latId : number;
+    globalBack : string;
+    theme : "white" | "black";
     onSetLater: (bool: boolean) => void;
     onSetLatId: (id: number) => void;
     onTodoAlarm: (alarmId: number, newDate: Date) => void;
@@ -45,10 +47,12 @@ interface Props {
     onRoutineDTO: (routineDTO: RoutineDTO) => void;
     onMove: (dt: Date, latId: number) => void;
     onAttain: (date: Date) => void;
+    onRoutineUpdateContent: (id: number, content: string) => void;
+    onTodoUpdateContent: (id: number, content: string) => void;
 }
 
-const Main: React.FC<Props> = ({globalFont,keys,todoList,routineList,routineId,later, latId,
-        onSetLatId, onSetLater,onTodoAlarm,onCancelAlarm,onAttain,
+const Main: React.FC<Props> = ({globalFont,keys,todoList,routineList,routineId,later, latId, globalBack, theme,
+        onSetLatId, onSetLater,onTodoAlarm,onCancelAlarm,onAttain,onRoutineUpdateContent, onTodoUpdateContent,
         onTodoDTO,onTodoCheck,onTodoDelete,onRoutineEnd,onRoutineRe,onRoutineUpdate,
         onRoutineCheck,onRoutineDTO,onMove}) => {
 
@@ -82,6 +86,14 @@ const Main: React.FC<Props> = ({globalFont,keys,todoList,routineList,routineId,l
     const [upModal,setUpModal] = useState<boolean>(false)
     const [upId,setUpId] = useState<number>(-1)
     const [upState,setUpState] = useState<boolean>(false)
+
+    const [upTodoId,setUpTodoId] = useState<number>(-1)
+    const [upTodoKey,setUpTodoKey] = useState<boolean>(false)
+    const [upTodoContent,setUpTodoContent] = useState<string>('')
+
+    const [upRouId,setUpRouId] = useState<number>(-1)
+    const [upRouKey,setUpRouKey] = useState<boolean>(false)
+    const [upRouContent,setUpRouContent] = useState<string>('')
 
     const [alarm,setAlarm] = useState<boolean>(false)
     const [alarmId,setAlarmId] = useState<number>(-1)
@@ -508,7 +520,7 @@ const Main: React.FC<Props> = ({globalFont,keys,todoList,routineList,routineId,l
                     setCalendarVisible(true)
                 })
             }}>
-            <Text style={{fontSize:22,fontWeight:'bold',color: globalFont}}>{year}년 {date.getMonth() + 1}월</Text>
+            <Text style={{fontSize:22,fontWeight:'bold',color: globalFont}}>{year}년 {(date.getMonth() + 1).toString().padStart(2, '0')}월</Text>
         </Pressable>
     )}
 
@@ -607,7 +619,8 @@ const Main: React.FC<Props> = ({globalFont,keys,todoList,routineList,routineId,l
             onTodoDelete(rouId)
             onRoutineDTO(routineDTO)
         }
-        
+        setOpenIdx(-1)
+        aniIdx.setValue(0);
         closeRoutineModal()
     }
     
@@ -694,6 +707,26 @@ const Main: React.FC<Props> = ({globalFont,keys,todoList,routineList,routineId,l
         return numDate.getTime();
     }
 
+    useEffect(() => {
+        setOpenIdx(-1)
+        aniIdx.setValue(0);
+        if(!upTodoKey) {
+            onTodoUpdateContent(upTodoId,upTodoContent)
+            setUpTodoContent('')
+            setUpTodoId(-1)
+        }
+    },[upTodoKey])
+
+    useEffect(() => {
+        setOpenIdx(-1)
+        aniIdx.setValue(0);
+        if(!upRouKey) {
+            onRoutineUpdateContent(upRouId,upRouContent)
+            setUpRouContent('')
+            setUpRouId(-1)
+        }
+    },[upRouKey])
+
     return (
         <View style={{flex:1}}>
             {!fold && 
@@ -725,10 +758,12 @@ const Main: React.FC<Props> = ({globalFont,keys,todoList,routineList,routineId,l
                                 },
                                 textSaturdayColor: '#2E8DFF',
                                 textSundayColor: 'tomato',
-                                arrowColor: 'black',
-                                todayTextColor: 'black',
+                                arrowColor: globalFont,
+                                todayTextColor: globalFont,
+                                calendarBackground: globalBack,
                                 textDayFontSize: 17,
                                 textDayFontWeight: 'bold',
+                                dayTextColor: globalFont,
                                 textMonthFontSize: 17,
                                 textMonthFontWeight: 'bold',
                                 textSectionTitleColor: globalFont,      
@@ -749,7 +784,7 @@ const Main: React.FC<Props> = ({globalFont,keys,todoList,routineList,routineId,l
                                 aniMain.setValue(0)
                                 setDate(new Date())
                             }}>
-                            <Text style={[styles.topDay,{color:globalFont}]}>{`${date.getMonth()+1}월 ${date.getDate()}일 ${date.getDay() === 0 ? '일' : date.getDay() === 1 ? '월' : 
+                            <Text style={[styles.topDay,{color:globalFont}]}>{`${(date.getMonth()+1).toString().padStart(2, '0')}월 ${(date.getDate()).toString().padStart(2, '0')}일 ${date.getDay() === 0 ? '일' : date.getDay() === 1 ? '월' : 
                                 date.getDay() === 2 ? '화' : date.getDay() === 3 ? '수' : date.getDay() === 4 ? '목' : date.getDay() === 5 ? '금' : '토'}요일`}
                             </Text>
                             {dateToInt(date) === dateToInt(new Date()) && 
@@ -796,8 +831,8 @@ const Main: React.FC<Props> = ({globalFont,keys,todoList,routineList,routineId,l
                                         disabled={ date.getDate() === item }
                                         onPress={ () => onWeek(date.getDate() - item) }
                                         style={{width:'14.3%',height:50,justifyContent:'center',alignItems:'center'}}>
-                                        <Text style={[styles.calTxt,{backgroundColor: date.getDate() === item ? 'darkgray' : 'white' , 
-                                            color: date.getDate() === item ? 'white' : index === 5 ? '#2E8DFF' : index === 6 ? 'tomato' : 'black', width:40,height:40,
+                                        <Text style={[styles.calTxt,{backgroundColor: date.getDate() === item ? 'darkgray' : globalBack, 
+                                            color: date.getDate() === item ? 'white' : index === 5 ? '#2E8DFF' : index === 6 ? 'tomato' : globalFont, width:40,height:40,
                                             borderRadius:20,textAlignVertical:'center',textAlign:'center'}]}>{item}</Text>
                                     </Pressable>)}
                                 </View>)}
@@ -808,7 +843,7 @@ const Main: React.FC<Props> = ({globalFont,keys,todoList,routineList,routineId,l
             </Animated.View>}
             <Pressable 
                 onPress={() => fold ? aniFolb(0) : aniFola(1)}
-                style={{alignItems:'center',borderBottomColor:'whitesmoke',borderBottomWidth:15,paddingBottom:5}}>
+                style={{alignItems:'center',borderBottomColor: theme === "white" ? 'whitesmoke' : '#333333',borderBottomWidth:15,paddingBottom:5}}>
                 <Animated.Image source={require(  '../../assets/image/arrow.png')} 
                     style={{width:40,height:40,
                         transform:[{rotate : aniArr.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '180deg'] })}]}}/>
@@ -849,11 +884,30 @@ const Main: React.FC<Props> = ({globalFont,keys,todoList,routineList,routineId,l
                                         <Text style={[styles.alTxt,{backgroundColor:'tomato'}]}>END D-{ (dateToInt(item.endDate) - dateToInt(date))/86400000 }</Text>
                                     }
                                 </View>
+                                { dateToInt(date) >= dateToInt(new Date()) ? <TextInput
+                                    multiline
+                                    onFocus={() => {
+                                        requestAnimationFrame(() => {
+                                            setUpRouId(item.id)
+                                            setUpRouKey(true)
+                                            setUpRouContent(item.content)
+                                        })
+                                    }}
+                                    onBlur={() => {
+                                        setUpRouKey(false)
+                                    }}
+                                    onChangeText={(text) => {setUpRouContent(text)}}
+                                    style={{textDecorationLine:  item.success.findIndex(item => dateToInt(item) === dateToInt(date)) 
+                                    !== -1 ? 'line-through' : 'none',color: item.success.findIndex(item => dateToInt(item) === dateToInt(date)) 
+                                    !== -1 ? 'darkgray' : globalFont,fontSize:16, padding:0}}
+                                >
+                                {item.content}
+                                </TextInput> :
                                 <Text style={{textDecorationLine:  item.success.findIndex(item => dateToInt(item) === dateToInt(date)) 
                                     !== -1 ? 'line-through' : 'none',color: item.success.findIndex(item => dateToInt(item) === dateToInt(date)) 
                                     !== -1 ? 'darkgray' : globalFont,fontSize:16}}>
                                     {item.content}
-                                </Text>
+                                </Text>}
                             </View>
                             { dateToInt(date) >= dateToInt(new Date()) && <View style={styles.buttonBox}>
                                 <Pressable
@@ -881,11 +935,28 @@ const Main: React.FC<Props> = ({globalFont,keys,todoList,routineList,routineId,l
                                         {item.date > new Date(new Date().setHours(0, 0, 0, 0)) && item.alarm && <View style={{flexDirection:'row'}}><Text style={styles.alTxt}>
                                             {item.alarmDate.getHours().toString().padStart(2, '0')} : {item.alarmDate.getMinutes().toString().padStart(2, '0')}
                                         </Text></View>}
-                                        <Text style={{textDecorationLine: item.success ? 'line-through' : 'none',color: item.success ? 'darkgray' : globalFont,fontSize:16}}>
+                                        { !item.success ? 
+                                        <TextInput 
+                                            multiline
+                                            onFocus={() => {
+                                                requestAnimationFrame(() => {
+                                                    setUpTodoId(item.id)
+                                                    setUpTodoKey(true)
+                                                    setUpTodoContent(item.content)
+                                                })
+                                            }}
+                                            onBlur={() => {
+                                                setUpTodoKey(false)
+                                            }}
+                                            onChangeText={(text) => {setUpTodoContent(text)}}
+                                            style={{color: item.success ? 'darkgray' : globalFont,fontSize:16,padding:0}}>
+                                            {item.content}
+                                        </TextInput> : 
+                                        <Text style={{textDecorationLine: 'line-through', color: 'darkgray' ,fontSize:16}}>
                                             {item.content}
                                         </Text>
+                                        }
                                     </View>
-                                        
                                     <View style={styles.buttonBox}>
                                         <Pressable
                                             onPress={() => setModalConfirm({
@@ -905,7 +976,8 @@ const Main: React.FC<Props> = ({globalFont,keys,todoList,routineList,routineId,l
                                             {!item.success ? <Animated.View
                                                 style={[styles.botButBox,
                                                 {width: index === openIdx ? aniIdx.interpolate({ inputRange: [0, 1], outputRange: [37, 101]  }) : 37,
-                                                marginLeft: index === openIdx ? aniIdx.interpolate({ inputRange: [0, 1], outputRange: [0, -62]  }) : 0,}]}>
+                                                marginLeft: index === openIdx ? aniIdx.interpolate({ inputRange: [0, 1], outputRange: [0, -62]  }) : 0,
+                                                backgroundColor: globalBack}]}>
                                                 <Pressable
                                                     onPress={() => item.alarm ? onCancelAlarm(item.id) : onAlarmModal(item.id) }
                                                     disabled={index !== openIdx || item.date < new Date(new Date().setHours(0, 0, 0, 0))}>
@@ -935,10 +1007,10 @@ const Main: React.FC<Props> = ({globalFont,keys,todoList,routineList,routineId,l
                             )}
                         </View>
                     </TouchableWithoutFeedback>
-                    <View style={{paddingBottom:85}}/>
+                    { !upTodoKey && !upRouKey && <View style={{paddingBottom:85}}/> }
                 </Animated.ScrollView>
             </View>}
-            {!later && <View style={[styles.contentBox,{opacity: keys ? 1 : 0.8 }]}>
+            {!later && !upTodoKey && !upRouKey && <View style={[styles.contentBox,{opacity: keys ? 1 : 0.8, backgroundColor : theme === "white" ? "white" : "#232323"}]}>
                 <TextInput value={todoDTO.content} 
                     multiline
                     style={[styles.contentInput,{color:globalFont}]}
@@ -960,7 +1032,7 @@ const Main: React.FC<Props> = ({globalFont,keys,todoList,routineList,routineId,l
                 visible={routine}
             >
             <View style={{flex:1,justifyContent:'center',alignItems:'center',backgroundColor:'#00000010'}}>
-                <View style={styles.rouModal}>
+                <View style={[styles.modal,{backgroundColor: globalBack}]}>
                     <Text style={[styles.modalTitle,{color:globalFont}]}>루틴 등록</Text>
                     <View style={{flexDirection:'row',width: '100%', justifyContent:'space-evenly',marginTop:20}}>
                         <Pressable
@@ -1004,7 +1076,7 @@ const Main: React.FC<Props> = ({globalFont,keys,todoList,routineList,routineId,l
                                 <Text style={[styles.time,{color:globalFont,fontSize:20, marginBottom:4.5}]}>알림</Text>
                                 <Switch
                                     trackColor={{false: 'darkgray', true: '#2E8DFF'}}
-                                    thumbColor={'white'}
+                                    thumbColor={theme === "white" ? 'white' : '#232323'}
                                     onValueChange={() => setRoutineAlarm(!routineAlarm)}
                                     value={routineAlarm}
                                 />
@@ -1065,13 +1137,14 @@ const Main: React.FC<Props> = ({globalFont,keys,todoList,routineList,routineId,l
                 visible={alarm}
             >
             <View style={{flex:1,justifyContent:'center',alignItems:'center',backgroundColor:'#00000010'}}>
-            <View style={styles.rouModal}>
+            <View style={[styles.modal,{backgroundColor: globalBack}]}>
                 <Text style={[styles.modalTitle,{color:globalFont}]}>알림 등록</Text>
-                <View style={{flexDirection:'row',justifyContent:'space-evenly',marginTop:10}}>
-                <View style={{height:40,justifyContent:'center'}}>
-                    <Text style={[styles.time,{color:globalFont}]}>{`${date.getMonth()+1}월 ${date.getDate()}일 ${date.getDay() === 0 ? '일' : date.getDay() === 1 ? '월' : 
-                        date.getDay() === 2 ? '화' : date.getDay() === 3 ? '수' : date.getDay() === 4 ? '목' : date.getDay() === 5 ? '금' : '토'}요일`}</Text>
-                </View>
+                <View style={{flexDirection:'row',justifyContent:'center',gap:20,marginTop:10}}>
+                    <View style={{height:40,justifyContent:'center'}}>
+                        <Text style={{color:globalFont,fontWeight: 'normal',fontSize:21}}>
+                            {`${(date.getMonth()+1).toString().padStart(2, '0')}월 ${(date.getDate()).toString().padStart(2, '0')}일 ${date.getDay() === 0 ? '일' : date.getDay() === 1 ? '월' : 
+                            date.getDay() === 2 ? '화' : date.getDay() === 3 ? '수' : date.getDay() === 4 ? '목' : date.getDay() === 5 ? '금' : '토'}요일`}</Text>
+                    </View>
                     <View style={styles.alarm}>
                         <View style={{width:50,height:40}}>
                             <ScrollView
@@ -1134,7 +1207,7 @@ const Main: React.FC<Props> = ({globalFont,keys,todoList,routineList,routineId,l
             >
                 <View style={{flex:1,justifyContent:'center',alignItems:'center',backgroundColor:'#00000010'}}>
                     {upState ? 
-                        <View style={styles.rouModal}>
+                        <View style={[styles.modal,{backgroundColor: globalBack}]}>
                             <View style={{flexDirection:'row',justifyContent:'space-between',alignItems:'center'}}>                         
                                 <Text style={[styles.modalTitle,{color:globalFont}]}>루틴 복구</Text>
                             </View>
@@ -1155,7 +1228,7 @@ const Main: React.FC<Props> = ({globalFont,keys,todoList,routineList,routineId,l
                                 </Pressable>
                             </View>
                         </View>
-                     : <View style={styles.rouModal}>
+                     : <View style={[styles.modal,{backgroundColor: globalBack}]}>
                         <View style={{flexDirection:'row',justifyContent:'space-between',alignItems:'center'}}>                         
                             <Text style={[styles.modalTitle,{color:globalFont}]}>루틴 설정</Text>
                             <Pressable
@@ -1215,7 +1288,7 @@ const Main: React.FC<Props> = ({globalFont,keys,todoList,routineList,routineId,l
                                 <Text style={[styles.time,{color:globalFont,fontSize:20, marginBottom:4.5}]}>알림</Text>
                                 <Switch
                                     trackColor={{false: 'darkgray', true: '#2E8DFF'}}
-                                    thumbColor={'white'}
+                                    thumbColor={theme === "white" ? 'white' : '#232323'}
                                     onValueChange={() => setUpAlarm(!upAlarm)}
                                     value={upAlarm}
                                 />
@@ -1276,7 +1349,7 @@ const Main: React.FC<Props> = ({globalFont,keys,todoList,routineList,routineId,l
                 visible={modalConfirm?.active}
             >
                 <View style={{flex:1,justifyContent:'center',alignItems:'center',backgroundColor:'#00000010'}}>
-                    <View style={styles.rouModal}>
+                    <View style={[styles.modal,{backgroundColor: globalBack}]}>
                         <Text style={[styles.modalTitle,{color:globalFont}]}>{modalConfirm?.title}</Text>
                         <View style={{paddingVertical:10,paddingHorizontal:20,gap:3}}>                            
                             <Text style={{color: globalFont,fontSize:16}}>
@@ -1425,7 +1498,7 @@ const styles = StyleSheet.create({
         marginHorizontal: 10,
         fontWeight: 'bold'
     },
-    rouModal : {
+    modal : {
         backgroundColor: 'white',
         width: '90%',
         paddingVertical: 10,

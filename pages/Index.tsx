@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Main from "./main/Main";
 import { Button, Dimensions, Image, Keyboard, Modal, PermissionsAndroid, Platform, Pressable, ScrollView, StyleSheet, Text, TouchableWithoutFeedback, View } from "react-native";
 import Attain from "./main/Attain";
@@ -65,14 +65,51 @@ const Index: React.FC = () => {
     
     const windowWidth = Dimensions.get('window').width;
 
+    ////////////////////Theme//////////////////////
+    const [first,setFirst] = useState<boolean>(true)
+    const [theme,setTheme] = useState<"white" | "black">("white")
+
+    const onTheme = () => {
+        setTheme(item => item === "white" ? "black" : "white")
+    }
+
+    const globalBack = useMemo<string>(() => {
+        if(theme === "white") {
+            return "white"
+        } else {
+            return "#2B2B2B"
+        }
+    },[theme])
+
+    const globalFont = useMemo<string>(() => {
+        if(theme === "white") {
+            return "black"
+        } else {
+            return "white"
+        }
+    },[theme])
+
+    useEffect(() => {
+        const getData = async () => {
+            try {
+                const themeData = await AsyncStorage.getItem("theme");
+                if (themeData !== null) {
+                    setTheme(themeData as "white" | "black")
+                }
+            } catch (error) {
+                console.error('불러오기 중 오류 발생', error);
+            }
+        }
+        getData();
+    },[])
     //////////////////////Attain//////////////////////
-    const [date,setDate] = useState(new Date());
+    const [attainDate,setAttainDate] = useState(new Date());
     const [startDate,setStartDate] = useState(new Date());
     const [endDate,setEndDate] = useState(new Date());
     const [attainType,setAttainType] = useState<AttainType>("date")
 
     const onDate = (date : Date) => {
-        setDate(date)
+        setAttainDate(date)
     }
     const onEndDate = (date : Date) => {
         setEndDate(date)
@@ -85,7 +122,7 @@ const Index: React.FC = () => {
     }
 
     const onAttain = (date : Date) => {
-        setDate(date)
+        setAttainDate(date)
         setAttainType("date")
         requestAnimationFrame(() => {
             setPage(1)
@@ -97,8 +134,8 @@ const Index: React.FC = () => {
     const [key,setKey] = useState<boolean>(false)
     const [todoList,setTodoList] = useState<TodoDTO[]>([])
     const [routineList,setRoutineList] = useState<RoutineDTO[]>([])
-    const [todoId,setTodoId] = useState<number>(1)
-    const [routineId,setRoutineId] = useState<number>(1)
+    const [todoId,setTodoId] = useState<number>(3)
+    const [routineId,setRoutineId] = useState<number>(3)
 
     const [later,setLater] = useState<boolean>(false)
     const [latId,setLatId] = useState<number>(-1)
@@ -164,7 +201,7 @@ const Index: React.FC = () => {
                         const newDate = new Date()
                         newDate.setDate(newDate.getDate() - 1)
                         scrollRef.current?.scrollTo({x: windowWidth, animated: true})
-                        setDate(newDate)
+                        setAttainDate(newDate)
                         setPage(1)
                     })
                 }
@@ -220,7 +257,7 @@ const Index: React.FC = () => {
                 console.error('저장 중 오류 발생', error);
             }
         }
-        if(todoId !== 1) {
+        if(todoId !== 3) {
             setData();
         }
     },[todoId])
@@ -233,7 +270,7 @@ const Index: React.FC = () => {
                 console.error('저장 중 오류 발생', error);
             }
         }
-        if(routineId !== 1) {
+        if(routineId !== 3) {
             setData();
         }
     },[routineId])
@@ -246,7 +283,7 @@ const Index: React.FC = () => {
                 console.error('저장 중 오류 발생', error);
             }
         }
-        if(todoId !== 1) {
+        if(todoId !== 3) {
             setData();
         }
     },[todoList])
@@ -259,10 +296,23 @@ const Index: React.FC = () => {
                 console.error('저장 중 오류 발생', error);
             }
         }
-        if(routineId !== 1) {
+        if(routineId !== 3) {
             setData();
         }
     },[routineList])
+
+    useEffect(() => {
+        const setData = async () => {
+            try {
+                AsyncStorage.setItem("theme", theme)
+            } catch (error) {
+                console.error('저장 중 오류 발생', error);
+            }
+        }
+        if(!first) {
+            setData();
+        }
+    },[theme])
     
     useEffect(() => {
         const getData = async () => {
@@ -271,7 +321,7 @@ const Index: React.FC = () => {
                 const toList = await AsyncStorage.getItem("todoList");
                 const rouId = await AsyncStorage.getItem("routineId");
                 const rouList = await AsyncStorage.getItem("routineList");
-                
+
                 if (toId !== null) {
                     setTodoId(parseInt(toId))
                 }
@@ -308,6 +358,7 @@ const Index: React.FC = () => {
             }
         }
         getData();
+        setFirst(false)
     },[reData])
 
     useEffect(() => {
@@ -365,6 +416,17 @@ const Index: React.FC = () => {
         setReData(item => !item)
     } 
 
+    const onRoutineUpdateContent = (routineId : number, content : string) => {
+        setRoutineList(routineList.map(item => {
+            if(item.id === routineId) {
+                return {...item, content : content}
+            } else {
+                return item
+            }
+        }))
+        setReData(item => !item)
+    } 
+
     //////////////////////////////////////////////////
 
     const onTodoDTO = (todoDTO : TodoDTO) => {
@@ -380,6 +442,16 @@ const Index: React.FC = () => {
         setTodoList(list => list.map(item => {
             if(item.id === id) {
                 return {...item, success: !item.success}
+            } else {
+                return item
+            }
+        }))
+    }
+
+    const onTodoUpdateContent = (id : number, content : string) => {
+        setTodoList(list => list.map(item => {
+            if(item.id === id) {
+                return {...item, content: content}
             } else {
                 return item
             }
@@ -532,11 +604,9 @@ const Index: React.FC = () => {
         setTodoList(setList);
     },[routineList,todoList])
 
-    const globalFont =  'black'
-
     return (
         <TouchableWithoutFeedback onPress={() => Keyboard.dismiss()} disabled={!key}>
-            <View style={{flex:1}}>
+            <View style={{flex:1,backgroundColor:globalBack}}>
                 <ScrollView
                     ref={ scrollRef }
                     pagingEnabled
@@ -553,11 +623,13 @@ const Index: React.FC = () => {
                         onTodoAlarm={onTodoAlarm} onCancelAlarm={onCancelAlarm} onTodoDTO={onTodoDTO} onTodoCheck={onTodoCheck}
                         onRoutineCheck={onRoutineCheck} onMove={onMove} onTodoDelete={onTodoDelete} onRoutineDTO={onRoutineDTO}
                         onRoutineEnd={onRoutineEnd} onRoutineRe={onRoutineRe} onRoutineUpdate={onRoutineUpdate} 
-                        todoList={todoList} routineList={routineList}/>
-                    <Attain globalFont={globalFont} todoList={todoList} routineList={routineList} date={date} page={page} keys={key}
+                        onTodoUpdateContent={onTodoUpdateContent} onRoutineUpdateContent={onRoutineUpdateContent}
+                        todoList={todoList} routineList={routineList} globalBack={globalBack} theme={theme}/>
+                    <Attain globalFont={globalFont} todoList={todoList} routineList={routineList} date={attainDate} page={page} keys={key}
                         type={attainType} startDate={startDate} endDate={endDate} onStartDate={onStartDate} onEndDate={onEndDate}
-                        onDate={onDate} onAttainType={onAttainType}/>
-                    <Setting/>
+                        onDate={onDate} onAttainType={onAttainType} globalBack={globalBack} theme={theme}/>
+                    <Setting routineList={routineList} todoList={todoList} globalFont={globalFont} globalBack={globalBack} theme={theme}
+                        onTheme={onTheme}/>
                 </ScrollView>
                 <Modal
                     animationType="fade"

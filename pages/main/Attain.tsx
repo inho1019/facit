@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Animated, Dimensions, Easing, Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { Animated, Dimensions, Easing, Image, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { AttainType, RoutineDTO, TodoDTO } from "../Index";
 import { AnimatedCircularProgress } from 'react-native-circular-progress';
+import { Calendar } from "react-native-calendars";
 
 interface Props {
     type: AttainType;
@@ -13,6 +14,8 @@ interface Props {
     startDate: Date;
     endDate: Date;
     keys: boolean;
+    globalBack : string;
+    theme : "white" | "black";
     onDate: (date: Date) => void;
     onStartDate: (date: Date) => void;
     onEndDate: (date: Date) => void;
@@ -20,7 +23,7 @@ interface Props {
 }
    
 
-const Attain: React.FC<Props> = ({globalFont,todoList,routineList,page,date,startDate,endDate,type,keys,onDate,onAttainType,onStartDate,onEndDate}) => {
+const Attain: React.FC<Props> = ({globalFont,todoList,routineList,page,date,startDate,endDate,type,keys,globalBack,theme,onDate,onAttainType,onStartDate,onEndDate}) => {
 
     const nowDate = useMemo(() => new Date(),[page]);
 
@@ -34,6 +37,34 @@ const Attain: React.FC<Props> = ({globalFont,todoList,routineList,page,date,star
     const aniBox = useRef(new Animated.Value(1)).current
 
     const [boxHeight,setBoxHeight] = useState<number>(0)
+
+    const [calendarModal,setCalendarModal] = useState<boolean>(false)
+    const [startingDay,setStartingDay] = useState<Date | null>()
+    const [endingDay,setEndingDay] = useState<Date | null>()
+    const markingDates = useMemo<any>(() => {
+        if(startingDay && !endingDay) {
+            return {
+                [startingDay.toISOString().split('T')[0]]: {startingDay: true, color: '#2E8DFF', textColor: 'white'}
+            }
+        } else if (startingDay && endingDay) {
+            let dateRange : any = {};
+
+            let currentDate = new Date(startingDay);
+        
+            while (currentDate <= endingDay) {
+                let dateString : string = currentDate.toISOString().split('T')[0];
+                if (dateString === startingDay.toISOString().split('T')[0]) {
+                    dateRange[dateString] = { startingDay: true, color: '#2E8DFF', textColor: 'white' };
+                } else if (dateString === endingDay.toISOString().split('T')[0]) {
+                    dateRange[dateString] = { endingDay: true, color: '#2E8DFF', textColor: 'white' };
+                } else {
+                    dateRange[dateString] = { color: '#2E8DFF70', textColor: 'white' };
+                }
+                currentDate.setDate(currentDate.getDate() + 1); // 하루 증가
+            }
+            return dateRange;
+        }
+    },[startingDay,endingDay])
 
     const onViewLayout = (event : any) => {
         setBoxHeight(event.nativeEvent.layout.height);
@@ -82,7 +113,7 @@ const Attain: React.FC<Props> = ({globalFont,todoList,routineList,page,date,star
 
     const routineFillList: RoutineDTO[] = useMemo(() => {
         if( type === "date" ) {
-            return routineList.filter(rou => !(rou.end && dateToInt(rou.startDate) === dateToInt(endDate)) && dateToInt(rou.startDate) <= dateToInt(date) && 
+            return routineList.filter(rou => !(rou.end && dateToInt(rou.startDate) >= dateToInt(endDate)) && dateToInt(rou.startDate) <= dateToInt(date) && 
                 (rou.end ? dateToInt(rou.endDate) > dateToInt(date) : true) && rou.term[date.getDay()])
         } else {
             const indexArr:number[] = [0,1,2,3,4,5,6]
@@ -95,7 +126,7 @@ const Attain: React.FC<Props> = ({globalFont,todoList,routineList,page,date,star
                     checkArr = indexArr.map((item) => item >= new Date(startDate).getDay() || item <= new Date(endDate).getDay() ? item : -1)
                 }
             }
-            return routineList.filter(rou => !(rou.end && dateToInt(rou.startDate) === dateToInt(endDate)) && 
+            return routineList.filter(rou => !(rou.end && dateToInt(rou.startDate) >= dateToInt(endDate)) && 
                 dateToInt(rou.startDate) <= dateToInt(endDate) && 
                 (rou.end ? dateToInt(rou.endDate) > dateToInt(startDate) : true) && 
                 (dateGap < 7 ? checkArr.some(item => rou.term[item]) : true ))
@@ -184,7 +215,15 @@ const Attain: React.FC<Props> = ({globalFont,todoList,routineList,page,date,star
                 const setStartDate = new Date(nowDate.getFullYear(), nowDate.getMonth(), 1);
                 onStartDate(setStartDate)
                 onEndDate(nowDate)
-            }
+            } else if ( typeNumber === 3) {
+                const setStartDate = new Date(nowDate.getFullYear(), 0, 1);
+                onStartDate(setStartDate)
+                onEndDate(nowDate)
+            } else if ( typeNumber === 4) {
+                setCalendarModal(true)
+                onStartDate(new Date())
+                onEndDate(new Date())
+            }  
         }
     },[typeNumber])
 
@@ -243,6 +282,7 @@ const Attain: React.FC<Props> = ({globalFont,todoList,routineList,page,date,star
             }
             aniTot.setValue(0);
             aniTxt.setValue(0);
+            setSearch('');
         }
     },[page,date,todoFillList,routineFillList])
 
@@ -263,6 +303,12 @@ const Attain: React.FC<Props> = ({globalFont,todoList,routineList,page,date,star
             }).start();
         }
     },[keys])
+
+
+    const calendarHeader = (date : Date) => {
+        const year = date.getFullYear();
+        return <Text style={{fontSize:22,fontWeight:'bold',color: globalFont}}>{year}년 {(date.getMonth() + 1).toString().padStart(2, '0')}월</Text>
+    }
 
     return(
         <View style={{flex:1}}>
@@ -312,7 +358,7 @@ const Attain: React.FC<Props> = ({globalFont,todoList,routineList,page,date,star
                     </ScrollView>
                 </View>
             </View>
-            <Animated.View style={[styles.attainBox,{height: aniBox.interpolate({ inputRange: [0, 1], outputRange: [75,boxHeight]})}]}>
+            <Animated.View style={[styles.attainBox,{backgroundColor: theme === "white" ? 'white' : '#333333',height: aniBox.interpolate({ inputRange: [0, 1], outputRange: [75,boxHeight]})}]}>
                 <View style={{ paddingTop: 10, paddingBottom: 40, gap: 20}} onLayout={onViewLayout}>
                     { type === "date" ? 
                     // 일간
@@ -333,7 +379,7 @@ const Attain: React.FC<Props> = ({globalFont,todoList,routineList,page,date,star
                             <Text style={[styles.h2,{color:globalFont, marginTop: 10}]}>
                                 {   dateToInt(date) === dateToInt(new Date()) ? '오늘' :
                                     dateToInt(date) === (dateToInt(new Date())) - 86400000 ? '어제' :
-                                    `${date.getMonth()+1}월 ${date.getDate()}일 ${date.getDay() === 0 ? '일' : date.getDay() === 1 ? '월' : 
+                                    `${(date.getMonth()+1).toString().padStart(2, '0')}월 ${(date.getDate()).toString().padStart(2, '0')}일 ${date.getDay() === 0 ? '일' : date.getDay() === 1 ? '월' : 
                                     date.getDay() === 2 ? '화' : date.getDay() === 3 ? '수' : date.getDay() === 4 ? '목' : date.getDay() === 5 ? '금' : '토'}요일`}
                             </Text>
                         </Pressable>
@@ -373,7 +419,7 @@ const Attain: React.FC<Props> = ({globalFont,todoList,routineList,page,date,star
                             <Text style={[styles.h2,{color:globalFont, marginTop: 10}]}>
                                 {   dateToInt(nowDate) - (86400000 * 7) < dateToInt(startDate) ? '이번주' :
                                     dateToInt(nowDate) - (86400000 * 14) < dateToInt(startDate)? '저번주' :
-                                    `${startDate.getMonth()+1}월 ${startDate.getDate()}일 - ${endDate.getMonth()+1}월 ${endDate.getDate()}일`}
+                                    `${(startDate.getMonth()+1).toString().padStart(2, '0')}월 ${(startDate.getDate()).toString().padStart(2, '0')}일 ~ ${(endDate.getMonth()+1).toString().padStart(2, '0')}월 ${(endDate.getDate()).toString().padStart(2, '0')}일`}
                             </Text>
                         </Pressable>
                         { dateToInt(nowDate) - (86400000 * 7) < dateToInt(startDate) ? 
@@ -390,6 +436,7 @@ const Attain: React.FC<Props> = ({globalFont,todoList,routineList,page,date,star
                         </Pressable>}
                     </View> :
                     // 월간
+                    type === "month" ?
                     <View style={{flexDirection:"row",justifyContent:'space-evenly',alignItems:'center',marginBottom:5}}>
                         <Pressable
                             onPress={() => {
@@ -403,7 +450,7 @@ const Attain: React.FC<Props> = ({globalFont,todoList,routineList,page,date,star
                                 style={{width:25,height:25, marginTop: 15, transform:[{rotate : '-90deg'}]}}/>
                         </Pressable>
                         <Pressable
-                            disabled={dateToInt(nowDate) - (86400000 * 7) < dateToInt(startDate)}
+                            disabled={( startDate.getFullYear() === new Date().getFullYear() && startDate.getMonth() === new Date().getMonth() )}
                             onPress={() => {
                                 aniTxt.setValue(0);
                                 const setStartDate = new Date(nowDate.getFullYear(), nowDate.getMonth(), 1);
@@ -413,7 +460,7 @@ const Attain: React.FC<Props> = ({globalFont,todoList,routineList,page,date,star
                         >
                             <Text style={[styles.h2,{color:globalFont, marginTop: 10}]}>
                                 { ( startDate.getFullYear() === new Date().getFullYear() && startDate.getMonth() === new Date().getMonth() ) ? 
-                                    '이번달' : `${startDate.getFullYear()}년 ${startDate.getMonth() + 1}월`
+                                    '이번달' : `${startDate.getFullYear()}년 ${(startDate.getMonth() + 1).toString().padStart(2, '0')}월`
                                 }
                             </Text>
                         </Pressable>
@@ -421,6 +468,7 @@ const Attain: React.FC<Props> = ({globalFont,todoList,routineList,page,date,star
                         <View style={{width:25,height:25}}/>
                         : <Pressable
                             onPress={() => {
+                                aniTxt.setValue(0);
                                 const setStartDate = new Date(startDate.getFullYear(), startDate.getMonth() + 1, 1);
                                 onStartDate(setStartDate)
                                 const setEndDate = new Date(startDate.getFullYear(), startDate.getMonth() + 2, 0);
@@ -430,6 +478,67 @@ const Attain: React.FC<Props> = ({globalFont,todoList,routineList,page,date,star
                             <Image source={require(  '../../assets/image/arrow.png')} 
                                 style={{width:25, height:25, marginTop: 15, transform:[{rotate : '90deg'}]}}/>
                         </Pressable>}
+                    </View> : 
+                    // 연간
+                    type === "year" ?
+                    <View style={{flexDirection:"row",justifyContent:'space-evenly',alignItems:'center',marginBottom:5}}>
+                        <Pressable
+                            onPress={() => {
+                                aniTxt.setValue(0);
+                                const setStartDate = new Date(startDate.getFullYear() - 1, 0, 1);
+                                onStartDate(setStartDate)
+                                const setEndDate = new Date(startDate.getFullYear() - 1, 11, 31);
+                                onEndDate(dateToInt(setEndDate) > dateToInt(nowDate) ? nowDate : setEndDate)
+                            }}
+                        >
+                            <Image source={require(  '../../assets/image/arrow.png')} 
+                                style={{width:25,height:25, marginTop: 15, transform:[{rotate : '-90deg'}]}}/>
+                        </Pressable>
+                        <Pressable
+                            disabled={startDate.getFullYear() === new Date().getFullYear() }
+                            onPress={() => {
+                                aniTxt.setValue(0);
+                                const setStartDate = new Date(nowDate.getFullYear(), 0, 1);
+                                onStartDate(setStartDate)
+                                onEndDate(nowDate)
+                            }}
+                        >
+                            <Text style={[styles.h2,{color:globalFont, marginTop: 10}]}>
+                                {startDate.getFullYear() === new Date().getFullYear() ? '올해'  :
+                                 startDate.getFullYear() === new Date().getFullYear() - 1 ? '작년' : 
+                                 `${startDate.getFullYear()}년`}
+                            </Text>
+                        </Pressable>
+                        { startDate.getFullYear() >= new Date().getFullYear()  ? 
+                        <View style={{width:25,height:25}}/>
+                        : <Pressable
+                            onPress={() => {
+                                aniTxt.setValue(0);
+                                const setStartDate = new Date(startDate.getFullYear() + 1, 0, 1);
+                                onStartDate(setStartDate)
+                                const setEndDate = new Date(startDate.getFullYear() + 1, 11, 31);
+                                onEndDate(dateToInt(setEndDate) > dateToInt(nowDate) ? nowDate : setEndDate)
+                            }}
+                        >
+                            <Image source={require(  '../../assets/image/arrow.png')} 
+                                style={{width:25, height:25, marginTop: 15, transform:[{rotate : '90deg'}]}}/>
+                        </Pressable>}
+                    </View> :
+                    // 선택
+                    <View style={{flexDirection:"row",justifyContent:'center',alignItems:'center',marginBottom:5}}>
+                        <Pressable
+                            onPress={() => {
+                                aniTxt.setValue(0);
+                                setCalendarModal(true)
+                            }}
+                        >
+                            <Text style={[styles.h2,{color:globalFont, marginTop: 10}]}>
+
+                                { dateToInt(startDate) === dateToInt(endDate) ? `${(startDate.getMonth()+1).toString().padStart(2, '0')}월 ${(startDate.getDate()).toString().padStart(2, '0')}일` :
+                                    `${(startDate.getMonth()+1).toString().padStart(2, '0')}월 ${(startDate.getDate()).toString().padStart(2, '0')}일 ~ ${(endDate.getMonth()+1).toString().padStart(2, '0')}월 ${(endDate.getDate()).toString().padStart(2, '0')}일`
+                                }
+                            </Text>
+                        </Pressable>
                     </View>}
                     <View style={{flexDirection:'row',justifyContent:'space-around'}}>
                         <AnimatedCircularProgress
@@ -471,11 +580,11 @@ const Attain: React.FC<Props> = ({globalFont,todoList,routineList,page,date,star
                     </View>
                     <View style={{paddingHorizontal:30,marginTop:15}}>
                         <Text style={{fontWeight:'bold', color:globalFont,marginLeft:10,marginBottom:2}}>총 달성률</Text>
-                        <View style={{width:'100%',backgroundColor:'whitesmoke',borderRadius:Math.floor(windowWidth*0.5 - 50) * 0.5,overflow:'hidden'}}>
+                        <View style={{width:'100%',backgroundColor: theme === "white" ? 'whitesmoke' : '#444444',borderRadius:Math.floor(windowWidth*0.5 - 50) * 0.5,overflow:'hidden'}}>
                             <Animated.View style={{
                                 height:Math.floor(windowWidth*0.5 - 50) * 0.25,
                                 width: aniTot,
-                                backgroundColor:'darkgray',
+                                backgroundColor:theme === "white" ? 'darkgray' : "#232323",
                                 borderRadius:Math.floor(windowWidth*0.5 - 50) * 0.5}}>
                                     <Animated.Text style={{width:50,fontWeight:'bold', opacity: aniTxt, color:globalFont, position:'absolute', height:Math.floor(windowWidth*0.5 - 50) * 0.25,left: 10,textAlignVertical:'center'}}>{Math.floor(totalFill)}%</Animated.Text>
                             </Animated.View>
@@ -487,17 +596,19 @@ const Attain: React.FC<Props> = ({globalFont,todoList,routineList,page,date,star
                 <View style={{flexDirection:'row',justifyContent:'center',alignItems:'center',paddingHorizontal:10,gap:15,marginTop:10}}>
                     <Text style={[styles.h2,{color:globalFont, marginLeft: 5,marginBottom:10,flex:1}]}>달성</Text>
                     <TextInput 
-                        style={{backgroundColor:'white',padding:5,flex:1,marginVertical:5,marginLeft:2,borderWidth:1,borderColor:'darkgray',color:globalFont}}
+                        style={{backgroundColor: globalBack,paddingHorizontal:5,paddingVertical:3,flex:1,
+                                marginVertical:5,marginLeft:2,borderWidth:1,borderColor: theme === "white" ? 'darkgray' : 'whitesmoke',color:globalFont}}
                         placeholder="검색"
                         placeholderTextColor="gray"
                         onChangeText={(text) => setSearch(text)}
+                        value={search}
                     />
                 </View>
                 <View style={{flexDirection:'row',paddingHorizontal:10,gap:10}}>
-                    <View style={{flex:1,backgroundColor:'whitesmoke',paddingVertical:5}}>
+                    <View style={{flex:1,backgroundColor: theme === "white" ? 'whitesmoke' : '#232323',paddingVertical:5}}>
                         <Text style={[styles.h4,{color:globalFont,textAlign:'center'}]}>목표</Text>
                     </View>
-                    <View style={{flex:1,backgroundColor:'whitesmoke',paddingVertical:5}}>
+                    <View style={{flex:1,backgroundColor: theme === "white" ? 'whitesmoke' : '#232323',paddingVertical:5}}>
                         <Text style={[styles.h4,{color:globalFont,textAlign:'center'}]}>루틴</Text>
                     </View>
                 </View>
@@ -525,6 +636,62 @@ const Attain: React.FC<Props> = ({globalFont,todoList,routineList,page,date,star
                     </ScrollView>
                 </View>
             </View>
+            <Modal
+                animationType="fade"
+                transparent={true}
+                visible={calendarModal}
+            >
+                 <View style={{flex:1,justifyContent:'center',alignItems:'center',backgroundColor:'#00000010'}}>
+                    <View style={[styles.modal,{backgroundColor: globalBack}]}>
+                        <Calendar
+                        style={{padding:10}}
+                        current={new Date().toISOString().split('T')[0]}
+                        renderHeader={ calendarHeader }
+                        markedDates={{
+                            [new Date().toISOString().split('T')[0]]: { selected: true, customContainerStyle: { backgroundColor: '#2E8DFF50'}, customTextStyle: {fontWeight: 'bold', color: 'white'}},
+                            ...markingDates
+                        }}
+                        onDayPress={(day) => {
+                            if(!startingDay) {
+                                setStartingDay(new Date(day.dateString))
+                            } else if (dateToInt(startingDay) > dateToInt(new Date(day.dateString))) {
+                                setStartingDay(new Date(day.dateString))
+                            } else {
+                                setEndingDay(new Date(day.dateString))
+                                requestAnimationFrame(() => {
+                                    onStartDate(startingDay)
+                                    onEndDate(new Date(day.dateString))
+                                    setStartingDay(null)
+                                    setEndingDay(null)
+                                    setCalendarModal(false)
+                                })
+                            }
+                        }}
+                        markingType={'period'}
+                        theme={{
+                            'stylesheet.calendar.header': {
+                                dayTextAtIndex5: {
+                                    color: '#2E8DFF'
+                                },
+                                dayTextAtIndex6: {
+                                    color: 'tomato'
+                                }
+                            },
+                            arrowColor: globalFont,
+                            todayTextColor: globalFont,
+                            calendarBackground: globalBack,
+                            textDayFontSize: 17,
+                            textDayFontWeight: 'bold',
+                            dayTextColor: globalFont,
+                            textMonthFontSize: 17,
+                            textMonthFontWeight: 'bold',
+                            textSectionTitleColor: globalFont,      
+                        }}
+                        firstDay={1}
+                        />
+                    </View>
+                </View>
+            </Modal>
         </View>
     )
 }
@@ -568,6 +735,14 @@ const styles = StyleSheet.create({
         padding: 10,
         borderBottomWidth: 1,
         borderBottomColor: 'gray'
-    }
+    },
+    modal : {
+        backgroundColor: 'white',
+        width: '90%',
+        paddingVertical: 10,
+        paddingHorizontal: 5,
+        borderRadius: 10,
+        elevation: 5,
+    },
 });
 export default Attain;
