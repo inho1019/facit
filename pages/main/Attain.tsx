@@ -287,12 +287,8 @@ const Attain: React.FC<Props> = ({globalFont,todoList,routineList,page,date,star
 
     useEffect(() => {
         if ( page === 1 ) {
-            if (circleRef1.current) {
-                circleRef1.current.animate(todoFill, 1200, Easing.inOut(Easing.quad));
-            }
-            if (circleRef2.current) {
-                circleRef2.current.animate(routineFill, 1200, Easing.inOut(Easing.quad));
-            }
+            circleRef1.current?.animate(todoFill, 1200, Easing.inOut(Easing.quad));
+            circleRef2.current?.animate(routineFill, 1200, Easing.inOut(Easing.quad));
             Animated.timing(aniTot, {
                 toValue: totalFill * ((windowWidth - 90) / 100),
                 duration: 1000,
@@ -307,12 +303,8 @@ const Attain: React.FC<Props> = ({globalFont,todoList,routineList,page,date,star
                 }).start();
             })
         } else {
-            if (circleRef1.current) {
-                circleRef1.current.animate(0,1,Easing.quad)
-            }
-            if (circleRef2.current) {
-                circleRef2.current.animate(0,1,Easing.quad)
-            }
+            circleRef1.current?.animate(0,1,Easing.quad)
+            circleRef2.current?.animate(0,1,Easing.quad)
             aniTot.setValue(0);
             aniTxt.setValue(0);
             setCalendarModal(false);
@@ -788,6 +780,7 @@ const Attain: React.FC<Props> = ({globalFont,todoList,routineList,page,date,star
                                     onEndDate(new Date(day.dateString))
                                     setStartingDay(null)
                                     setEndingDay(null)
+                                    aniTxt.setValue(0);
                                     setCalendarModal(false)
                                 })
                             }
