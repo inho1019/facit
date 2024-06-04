@@ -27,6 +27,13 @@ const Attain: React.FC<Props> = ({globalFont,todoList,routineList,page,date,star
 
     const nowDate = useMemo(() => new Date(),[page]);
 
+    const dateToInt = (date : Date | string) => {
+        const newDate = new Date(date)
+        const numDate = new Date(newDate.getFullYear(),newDate.getMonth(),newDate.getDate())
+
+        return numDate.getTime();
+    }
+
     const scrollRef = useRef<ScrollView>(null)
 
     const circleRef1 = useRef<AnimatedCircularProgress>(null);
@@ -35,10 +42,17 @@ const Attain: React.FC<Props> = ({globalFont,todoList,routineList,page,date,star
     const aniTot = useRef(new Animated.Value(0)).current
     const aniTxt = useRef(new Animated.Value(0)).current
     const aniBox = useRef(new Animated.Value(1)).current
+    const aniMoTxt = useRef(new Animated.Value(0)).current
+    const aniBarA = useRef(new Animated.Value(0)).current
+    const aniBarB = useRef(new Animated.Value(1)).current
 
     const [boxHeight,setBoxHeight] = useState<number>(0)
-
+    
     const [calendarModal,setCalendarModal] = useState<boolean>(false)
+    
+    const [routineModal,setRoutineModal] = useState<boolean>(false)
+    const [routineId,setRoutineId] = useState<number>(-1)
+
     const [startingDay,setStartingDay] = useState<Date | null>()
     const [endingDay,setEndingDay] = useState<Date | null>()
     const markingDates = useMemo<any>(() => {
@@ -66,22 +80,38 @@ const Attain: React.FC<Props> = ({globalFont,todoList,routineList,page,date,star
         }
     },[startingDay,endingDay])
 
+    const routineMarkingDates = useMemo<any>(() => {
+        const routine = routineList.find(item => item.id === routineId)
+
+        let dateRange : any = {};
+
+        if(routine) {
+            for (let i = 0 ; i < routine.success.length ; i++) {
+                if( !routine.end || (routine.end && dateToInt(routine.success[i]) < dateToInt(routine.endDate)))  {
+                    let dateString : string = new Date(routine.success[i]).toISOString().split('T')[0];
+                    dateRange[dateString] = { selected: true, selectedColor: 'tomato', customTextStyle: {fontWeight: 'bold', color: 'white'} };
+                }
+            }
+        }
+        return dateRange;
+    },[routineId])
+
     const onViewLayout = (event : any) => {
         setBoxHeight(event.nativeEvent.layout.height);
     };
 
-    const dateToInt = (date : Date | string) => {
-        const newDate = new Date(date)
-        const numDate = new Date(newDate.getFullYear(),newDate.getMonth(),newDate.getDate())
-
-        return numDate.getTime();
-    }
-
-    const conuntWeek = (itemStartDate:Date, weeknum:number) => {
+    const countWeek = (itemStartDate:Date, weeknum:number, bool:boolean) => {
         let count = 0;
-        let currentDate = new Date(dateToInt(itemStartDate) > dateToInt(startDate) ? itemStartDate : startDate);
+        let currentDate = new Date(dateToInt(itemStartDate) > dateToInt(startDate) || bool ? itemStartDate : startDate);
 
-        while (dateToInt(currentDate) <= dateToInt(endDate)) {
+        const routine = routineList.find(item => item.id === routineId)
+
+        while (dateToInt(currentDate) <= dateToInt( bool ? 
+            routine?.end ? routine?.endDate : new Date() : 
+                routine?.end ? dateToInt(routine.endDate) < dateToInt(endDate) ? routine.endDate : endDate : endDate)
+            - (bool ? routine?.end ? 86400000 : 0 : 
+                routine?.end ? dateToInt(routine.endDate) < dateToInt(endDate) ? 86400000 : 0 : 0
+            )) {
             if (currentDate.getDay() === weeknum) {
                 count++;
             }
@@ -113,7 +143,7 @@ const Attain: React.FC<Props> = ({globalFont,todoList,routineList,page,date,star
 
     const routineFillList: RoutineDTO[] = useMemo(() => {
         if( type === "date" ) {
-            return routineList.filter(rou => !(rou.end && dateToInt(rou.startDate) >= dateToInt(endDate)) && dateToInt(rou.startDate) <= dateToInt(date) && 
+            return routineList.filter(rou => !(rou.end && dateToInt(rou.startDate) >= dateToInt(rou.endDate)) && dateToInt(rou.startDate) <= dateToInt(date) && 
                 (rou.end ? dateToInt(rou.endDate) > dateToInt(date) : true) && rou.term[date.getDay()])
         } else {
             const indexArr:number[] = [0,1,2,3,4,5,6]
@@ -126,7 +156,7 @@ const Attain: React.FC<Props> = ({globalFont,todoList,routineList,page,date,star
                     checkArr = indexArr.map((item) => item >= new Date(startDate).getDay() || item <= new Date(endDate).getDay() ? item : -1)
                 }
             }
-            return routineList.filter(rou => !(rou.end && dateToInt(rou.startDate) >= dateToInt(endDate)) && 
+            return routineList.filter(rou => !(rou.end && dateToInt(rou.startDate) >=  dateToInt(rou.endDate)) && 
                 dateToInt(rou.startDate) <= dateToInt(endDate) && 
                 (rou.end ? dateToInt(rou.endDate) > dateToInt(startDate) : true) && 
                 (dateGap < 7 ? checkArr.some(item => rou.term[item]) : true ))
@@ -153,7 +183,7 @@ const Attain: React.FC<Props> = ({globalFont,todoList,routineList,page,date,star
                 });
 
                 return trueArr.map(num => {
-                    return conuntWeek(item.startDate, num)
+                    return countWeek(item.startDate, num, false)
                 }).reduce((accumulator, currentValue) => accumulator + currentValue, 0);
             }).reduce((accumulator, currentValue) => accumulator + currentValue, 0);
 
@@ -183,7 +213,7 @@ const Attain: React.FC<Props> = ({globalFont,todoList,routineList,page,date,star
                 });
 
                 return trueArr.map(num => {
-                    return conuntWeek(item.startDate, num)
+                    return countWeek(item.startDate, num, false)
                 }).reduce((accumulator, currentValue) => accumulator + currentValue, 0);
             }).reduce((accumulator, currentValue) => accumulator + currentValue, 0);
 
@@ -209,14 +239,17 @@ const Attain: React.FC<Props> = ({globalFont,todoList,routineList,page,date,star
             if ( typeNumber === 1) {
                 const setStartDate = new Date()
                 setStartDate.setDate(setStartDate.getDate()-( nowDate.getDay() === 0 ? 7 : nowDate.getDay() )+1)
+                setCalendarModal(false)
                 onStartDate(setStartDate)
                 onEndDate(nowDate)
             } else if ( typeNumber === 2) {
                 const setStartDate = new Date(nowDate.getFullYear(), nowDate.getMonth(), 1);
+                setCalendarModal(false)
                 onStartDate(setStartDate)
                 onEndDate(nowDate)
             } else if ( typeNumber === 3) {
                 const setStartDate = new Date(nowDate.getFullYear(), 0, 1);
+                setCalendarModal(false)
                 onStartDate(setStartDate)
                 onEndDate(nowDate)
             } else if ( typeNumber === 4) {
@@ -282,6 +315,7 @@ const Attain: React.FC<Props> = ({globalFont,todoList,routineList,page,date,star
             }
             aniTot.setValue(0);
             aniTxt.setValue(0);
+            setCalendarModal(false);
             setSearch('');
         }
     },[page,date,todoFillList,routineFillList])
@@ -304,10 +338,83 @@ const Attain: React.FC<Props> = ({globalFont,todoList,routineList,page,date,star
         }
     },[keys])
 
+    useEffect(() => {
+        if(routineModal) {
+            const routine = routineList.find(item => item.id === routineId)
+            
+            if(routine) {
+                Animated.timing(aniBarA, {
+                    toValue: routineTot(routine,false) === 0 ? 0 : routineSuc(routine) / routineTot(routine,false) * 100 * ((windowWidth * 0.9 - 70) / 100),
+                    duration: 1000,
+                    useNativeDriver: false,
+                    easing: Easing.out(Easing.ease)
+                }).start()
+                Animated.timing(aniBarB, {
+                    toValue: routineTot(routine,true) === 0 ? 0 : routineNowSuc(routine) / routineTot(routine,true) * 100 * ((windowWidth * 0.9 - 70) / 100),
+                    duration: 1000,
+                    useNativeDriver: false,
+                    easing: Easing.out(Easing.ease)
+                }).start(() => {
+                    Animated.timing(aniMoTxt, {
+                        toValue: 1,
+                        duration: 300,
+                        useNativeDriver: false,
+                        easing: Easing.out(Easing.ease)
+                    }).start();
+                })
+            }
+        } else {
+            aniBarA.setValue(0);
+            aniBarB.setValue(0);
+            aniMoTxt.setValue(0);
+        }   
+    },[routineModal,routineId])
+
 
     const calendarHeader = (date : Date) => {
         const year = date.getFullYear();
         return <Text style={{fontSize:22,fontWeight:'bold',color: globalFont}}>{year}년 {(date.getMonth() + 1).toString().padStart(2, '0')}월</Text>
+    }
+
+    const routineTot = (routineDTO : RoutineDTO | undefined, bool:boolean) => {
+        if(routineDTO) {
+            const trueArr : number[] = [];
+    
+            routineDTO.term.forEach((value, index) => {
+                if (value) {
+                    trueArr.push(index);
+                }
+            });
+    
+            return trueArr.map(num => {
+                return countWeek(routineDTO.startDate, num, bool)
+            }).reduce((accumulator, currentValue) => accumulator + currentValue, 0);
+        } else {
+            return 0;
+        }
+    }
+
+    const routineSuc = (routineDTO : RoutineDTO | undefined) => {
+        if(routineDTO) {
+            return routineDTO.success.filter(dt => dateToInt(dt) >= dateToInt(startDate) && dateToInt(dt) <= dateToInt(endDate)).length
+        } else {
+            return 0;
+        }
+    }
+
+    const routineNowSuc = (routineDTO : RoutineDTO | undefined) => {
+        if(routineDTO) {
+            return routineDTO.success.filter(dt => dateToInt(dt) <= dateToInt(routineDTO.end ? new Date(routineDTO.endDate) : new Date()) - (routineDTO.end ? 86400000 : 0)).length
+        } else {
+            return 0;
+        }
+    }
+
+    const sinceUntil = (routineDTO : RoutineDTO | undefined) => {
+        if(routineDTO) {
+            return routineDTO.end ? `${(new Date(routineDTO.startDate).getMonth()+1).toString().padStart(2, '0')}월 ${(new Date(routineDTO.startDate).getDate()).toString().padStart(2, '0')}일 - ${(new Date(routineDTO.endDate).getMonth()+1).toString().padStart(2, '0')}월 ${(new Date(routineDTO.endDate).getDate()).toString().padStart(2, '0')}일` :
+            `${(new Date(routineDTO.startDate).getMonth()+1).toString().padStart(2, '0')}월 ${(new Date(routineDTO.startDate).getDate()).toString().padStart(2, '0')}일 - 진행중`
+        } 
     }
 
     return(
@@ -323,7 +430,7 @@ const Attain: React.FC<Props> = ({globalFont,todoList,routineList,page,date,star
                             setTimeout(() => setTypeLoading(false),400)
                         }}
                     >
-                        <Image source={require(  '../../assets/image/triangle.png')} 
+                        <Image source={ theme === "white" ? require(  '../../assets/image/triangle-black.png') : require(  '../../assets/image/triangle-white.png')} 
                             style={{width:15,height:15,opacity: typeNumber === 0 ? 0.3 : 1}}/>
                     </Pressable>
                     <Pressable
@@ -335,7 +442,7 @@ const Attain: React.FC<Props> = ({globalFont,todoList,routineList,page,date,star
                             setTimeout(() => setTypeLoading(false),400)
                         }}
                     >
-                        <Image source={require(  '../../assets/image/triangle.png')} 
+                        <Image source={ theme === "white" ? require(  '../../assets/image/triangle-black.png') : require(  '../../assets/image/triangle-white.png')} 
                             style={{width:15,height:15,opacity: typeNumber === 4 ? 0.3 : 1, transform:[{rotate : '180deg'}]}}/>
                     </Pressable>
                 </View>
@@ -419,7 +526,7 @@ const Attain: React.FC<Props> = ({globalFont,todoList,routineList,page,date,star
                             <Text style={[styles.h2,{color:globalFont, marginTop: 10}]}>
                                 {   dateToInt(nowDate) - (86400000 * 7) < dateToInt(startDate) ? '이번주' :
                                     dateToInt(nowDate) - (86400000 * 14) < dateToInt(startDate)? '저번주' :
-                                    `${(startDate.getMonth()+1).toString().padStart(2, '0')}월 ${(startDate.getDate()).toString().padStart(2, '0')}일 ~ ${(endDate.getMonth()+1).toString().padStart(2, '0')}월 ${(endDate.getDate()).toString().padStart(2, '0')}일`}
+                                    `${(startDate.getMonth()+1).toString().padStart(2, '0')}월 ${(startDate.getDate()).toString().padStart(2, '0')}일 - ${(endDate.getMonth()+1).toString().padStart(2, '0')}월 ${(endDate.getDate()).toString().padStart(2, '0')}일`}
                             </Text>
                         </Pressable>
                         { dateToInt(nowDate) - (86400000 * 7) < dateToInt(startDate) ? 
@@ -533,9 +640,8 @@ const Attain: React.FC<Props> = ({globalFont,todoList,routineList,page,date,star
                             }}
                         >
                             <Text style={[styles.h2,{color:globalFont, marginTop: 10}]}>
-
                                 { dateToInt(startDate) === dateToInt(endDate) ? `${(startDate.getMonth()+1).toString().padStart(2, '0')}월 ${(startDate.getDate()).toString().padStart(2, '0')}일` :
-                                    `${(startDate.getMonth()+1).toString().padStart(2, '0')}월 ${(startDate.getDate()).toString().padStart(2, '0')}일 ~ ${(endDate.getMonth()+1).toString().padStart(2, '0')}월 ${(endDate.getDate()).toString().padStart(2, '0')}일`
+                                    `${(startDate.getMonth()+1).toString().padStart(2, '0')}월 ${(startDate.getDate()).toString().padStart(2, '0')}일 - ${(endDate.getMonth()+1).toString().padStart(2, '0')}월 ${(endDate.getDate()).toString().padStart(2, '0')}일`
                                 }
                             </Text>
                         </Pressable>
@@ -579,12 +685,12 @@ const Attain: React.FC<Props> = ({globalFont,todoList,routineList,page,date,star
                         </AnimatedCircularProgress>
                     </View>
                     <View style={{paddingHorizontal:30,marginTop:15}}>
-                        <Text style={{fontWeight:'bold', color:globalFont,marginLeft:10,marginBottom:2}}>총 달성률</Text>
+                        <Text style={{fontWeight:'bold', color:globalFont,marginLeft:10,marginBottom:2}}>총 달성도</Text>
                         <View style={{width:'100%',backgroundColor: theme === "white" ? 'whitesmoke' : '#444444',borderRadius:Math.floor(windowWidth*0.5 - 50) * 0.5,overflow:'hidden'}}>
                             <Animated.View style={{
                                 height:Math.floor(windowWidth*0.5 - 50) * 0.25,
                                 width: aniTot,
-                                backgroundColor:theme === "white" ? 'darkgray' : "#232323",
+                                backgroundColor:theme === "white" ? 'darkgray' : "#222222",
                                 borderRadius:Math.floor(windowWidth*0.5 - 50) * 0.5}}>
                                     <Animated.Text style={{width:50,fontWeight:'bold', opacity: aniTxt, color:globalFont, position:'absolute', height:Math.floor(windowWidth*0.5 - 50) * 0.25,left: 10,textAlignVertical:'center'}}>{Math.floor(totalFill)}%</Animated.Text>
                             </Animated.View>
@@ -597,7 +703,7 @@ const Attain: React.FC<Props> = ({globalFont,todoList,routineList,page,date,star
                     <Text style={[styles.h2,{color:globalFont, marginLeft: 5,marginBottom:10,flex:1}]}>달성</Text>
                     <TextInput 
                         style={{backgroundColor: globalBack,paddingHorizontal:5,paddingVertical:3,flex:1,
-                                marginVertical:5,marginLeft:2,borderWidth:1,borderColor: theme === "white" ? 'darkgray' : 'whitesmoke',color:globalFont}}
+                                marginVertical:5,marginLeft:2,borderWidth:1,borderColor: theme === "white" ? 'darkgray' : 'gray',color:globalFont}}
                         placeholder="검색"
                         placeholderTextColor="gray"
                         onChangeText={(text) => setSearch(text)}
@@ -605,10 +711,10 @@ const Attain: React.FC<Props> = ({globalFont,todoList,routineList,page,date,star
                     />
                 </View>
                 <View style={{flexDirection:'row',paddingHorizontal:10,gap:10}}>
-                    <View style={{flex:1,backgroundColor: theme === "white" ? 'whitesmoke' : '#232323',paddingVertical:5}}>
+                    <View style={{flex:1,backgroundColor: theme === "white" ? 'whitesmoke' : '#222222',paddingVertical:5}}>
                         <Text style={[styles.h4,{color:globalFont,textAlign:'center'}]}>목표</Text>
                     </View>
-                    <View style={{flex:1,backgroundColor: theme === "white" ? 'whitesmoke' : '#232323',paddingVertical:5}}>
+                    <View style={{flex:1,backgroundColor: theme === "white" ? 'whitesmoke' : '#222222',paddingVertical:5}}>
                         <Text style={[styles.h4,{color:globalFont,textAlign:'center'}]}>루틴</Text>
                     </View>
                 </View>
@@ -617,7 +723,7 @@ const Attain: React.FC<Props> = ({globalFont,todoList,routineList,page,date,star
                         {
                             todoFillList.filter(todo => todo.content.includes(search) && todo.success).map((item,index) => 
                             <Animated.View key={`${item}_${index}`} style={[styles.items,{opacity:aniTxt}]}>
-                                <Text style={{color:globalFont}}>{item.content}</Text>
+                                <Text style={{color:globalFont,margin:10}}>{item.content}</Text>
                             </Animated.View>)
                         }
                     </ScrollView>
@@ -626,11 +732,30 @@ const Attain: React.FC<Props> = ({globalFont,todoList,routineList,page,date,star
                             type === 'date' ?
                             routineFillList.filter(rou => rou.content.includes(search) && rou.success.findIndex(item => dateToInt(item) === dateToInt(date)) !== -1).map((item,index) => 
                             <Animated.View key={`${item}_${index}`} style={[styles.items,{opacity:aniTxt}]}>
-                                <Text style={{color:globalFont}}>{item.content}</Text>
+                                <Text style={{color:globalFont,margin:10,flex:1}}>{item.content}</Text>
+                                <Pressable
+                                    onPress={() => {
+                                        setRoutineId(item.id)
+                                        setRoutineModal(true)
+                                    }}
+                                >
+                                    <Image source={ theme === "white" ? require(  '../../assets/image/chart-black.png') : require(  '../../assets/image/chart-white.png')}  style={{width:25,height:25,marginRight:10}}/>
+                                </Pressable>
                             </Animated.View>) :
                             routineFillList.filter(rou => rou.content.includes(search)).map((item,index) => 
                             <Animated.View key={`${item}_${index}`} style={[styles.items,{opacity:aniTxt}]}>
-                                <Text style={{color:globalFont}}>{item.content}</Text>
+                                <View
+                                    style={{position:'absolute',width: `${routineSuc(item) / routineTot(item,false) * 100}%`,height:7,backgroundColor: 'darkgray',bottom:-1}}
+                                />
+                                <Text style={{color:globalFont,margin:10,flex:1}}>{item.content}</Text>
+                                <Pressable
+                                    onPress={() => {
+                                        setRoutineId(item.id)
+                                        setRoutineModal(true)
+                                    }}
+                                >
+                                    <Image source={ theme === "white" ? require(  '../../assets/image/chart-black.png') : require(  '../../assets/image/chart-white.png')}  style={{width:25,height:25,marginRight:10}}/>
+                                </Pressable>
                             </Animated.View>)
                         }
                     </ScrollView>
@@ -677,6 +802,8 @@ const Attain: React.FC<Props> = ({globalFont,todoList,routineList,page,date,star
                                     color: 'tomato'
                                 }
                             },
+                            textSaturdayColor: '#2E8DFF',
+                            textSundayColor: 'tomato',
                             arrowColor: globalFont,
                             todayTextColor: globalFont,
                             calendarBackground: globalBack,
@@ -689,6 +816,121 @@ const Attain: React.FC<Props> = ({globalFont,todoList,routineList,page,date,star
                         }}
                         firstDay={1}
                         />
+                    </View>
+                </View>
+            </Modal>
+            <Modal
+                animationType="fade"
+                transparent={true}
+                visible={routineModal}
+            >
+                 <View style={{flex:1,justifyContent:'center',alignItems:'center',backgroundColor:'#00000010'}}>
+                    <View style={[styles.modal,{backgroundColor: globalBack,marginVertical:20}]}>
+                        <ScrollView> 
+                            <View style={{flexDirection:'row', justifyContent:'space-between',alignItems:'center'}}>
+                                <Text style={[styles.modalTitle,{color:globalFont}]}>루틴 상세</Text>
+                                <Pressable
+                                    onPress={() => {
+                                        setRoutineId(-1)
+                                        setRoutineModal(false)
+                                    }}
+                                >
+                                    <Image source={ theme === "white" ? require(  '../../assets/image/delete-black.png') : require(  '../../assets/image/delete-white.png')}  
+                                        style={{width:30,height:30,marginRight:5}}/>
+                                </Pressable>
+                            </View>
+                            <Text style={{color:'gray',marginTop:20,marginLeft:30,marginBottom:3}}>
+                                {sinceUntil(routineList.find(item => item.id === routineId))}
+                            </Text>
+                            <View style={[styles.modalTxtBox,{backgroundColor:theme === "white" ? 'whitesmoke' : '#222222'}]}>
+                                <View style={{flexDirection:'row',justifyContent:"space-between"}}>
+                                    <View style={{flexDirection:'row',gap:5}}>
+                                        {routineList.find(item => item.id === routineId)?.term.map((item,index) => 
+                                            item && 
+                                            <Text key={`${item}_${index}`} style={{color:globalFont,backgroundColor:theme === "white" ? 'lightgray' : "#444444",width:21,height:21,borderRadius:10.5,textAlign:'center'}}>
+                                                {index === 1 ? '월' : index === 2 ? '화' : index === 3 ? '수' : index === 4 ? '목' : index === 5 ? '금' : index === 6  ? '토' : '일'}
+                                            </Text>
+                                        )}
+                                    </View>
+                                    {routineList.find(item => item.id === routineId)?.alarm && 
+                                    <Text style={{color:globalFont,backgroundColor:theme === "white" ? 'lightgray' : "#444444",height:21,borderRadius:10.5,textAlign:'center',paddingHorizontal:7}}>
+                                        {routineList.find(item => item.id === routineId)?.alarmDate.getHours().toString().padStart(2, '0')} : {routineList.find(item => item.id === routineId)?.alarmDate.getMinutes().toString().padStart(2, '0')}
+                                    </Text>}
+                                </View>
+                                <Text style={{color:globalFont,margin:5}}>
+                                    {routineList.find(item => item.id === routineId)?.content}
+                                </Text>
+                            </View>
+                            { type !== "date" &&
+                                <View style={{paddingHorizontal:30,marginTop:20}}>
+                                    <Text style={{fontWeight:'bold', color:globalFont,marginLeft:10,marginBottom:2}}>
+                                    { dateToInt(startDate) === dateToInt(endDate) ? `${(startDate.getMonth()+1).toString().padStart(2, '0')}월 ${(startDate.getDate()).toString().padStart(2, '0')}일` :
+                                        `${(startDate.getMonth()+1).toString().padStart(2, '0')}월 ${(startDate.getDate()).toString().padStart(2, '0')}일 - ${(endDate.getMonth()+1).toString().padStart(2, '0')}월 ${(endDate.getDate()).toString().padStart(2, '0')}일`
+                                    } 달성도
+                                    </Text>
+                                    <View style={{width:'100%',backgroundColor: theme === "white" ? 'aliceblue' : '#444444',borderRadius:Math.floor(windowWidth*0.5 - 50) * 0.5,overflow:'hidden'}}>
+                                        <Animated.View style={{
+                                            height:Math.floor(windowWidth*0.5 - 50) * 0.25,
+                                            width: aniBarA,
+                                            backgroundColor:theme === "white" ? '#2E8DFF' : "#222222",
+                                            borderRadius:Math.floor(windowWidth*0.5 - 50) * 0.5}}>
+                                                <Animated.Text style={{width:50,fontWeight:'bold', opacity: aniMoTxt, color:globalFont, position:'absolute', 
+                                                    height:Math.floor(windowWidth*0.5 - 50) * 0.25,left: 10,textAlignVertical:'center'}}>
+                                                        {routineSuc(routineList.find(item => item.id === routineId))}/{routineTot(routineList.find(item => item.id === routineId),false)}
+                                                </Animated.Text>
+                                        </Animated.View>
+                                    </View>
+                                </View>
+                            }
+                            <View style={{paddingHorizontal:30,marginTop:20}}>
+                                <Text style={{fontWeight:'bold', color:globalFont,marginLeft:10,marginBottom:2}}>
+                                { routineList.find(item => item.id === routineId)?.end ?
+                                    '루틴 시작일 - 종료일 달성도' : '루틴 시작일 - 현재일 달성도'
+                                }
+                                </Text>
+                                <View style={{width:'100%',backgroundColor: theme === "white" ? 'snow' : '#444444',borderRadius:Math.floor(windowWidth*0.5 - 50) * 0.5,overflow:'hidden'}}>
+                                    <Animated.View style={{
+                                        height:Math.floor(windowWidth*0.5 - 50) * 0.25,
+                                        width: aniBarB,
+                                        backgroundColor:theme === "white" ? 'tomato' : "#222222",
+                                        borderRadius:Math.floor(windowWidth*0.5 - 50) * 0.5}}>
+                                            <Animated.Text style={{width:50,fontWeight:'bold', opacity: aniMoTxt, color:globalFont, position:'absolute', 
+                                                height:Math.floor(windowWidth*0.5 - 50) * 0.25,left: 10,textAlignVertical:'center'}}>
+                                                    {routineNowSuc(routineList.find(item => item.id === routineId))}/{routineTot(routineList.find(item => item.id === routineId),true)}
+                                            </Animated.Text>
+                                    </Animated.View>
+                                </View>
+                            </View>
+                            <Calendar
+                                style={{padding:10,marginTop:10}}
+                                renderHeader={ calendarHeader }
+                                markedDates={{
+                                    [new Date().toISOString().split('T')[0]]: { selected: true, selectedColor: '#ff634750', customTextStyle: {fontWeight: 'bold', color: 'white'} },
+                                    ...routineMarkingDates
+                                }}
+                                theme={{
+                                    'stylesheet.calendar.header': {
+                                        dayTextAtIndex5: {
+                                            color: '#2E8DFF'
+                                        },
+                                        dayTextAtIndex6: {
+                                            color: 'tomato'
+                                        }
+                                    },
+                                    textSaturdayColor: '#2E8DFF',
+                                    textSundayColor: 'tomato',
+                                    arrowColor: globalFont,
+                                    calendarBackground: globalBack,
+                                    textDayFontSize: 17,
+                                    textDayFontWeight: 'bold',
+                                    dayTextColor: globalFont,
+                                    textMonthFontSize: 17,
+                                    textMonthFontWeight: 'bold',
+                                    textSectionTitleColor: globalFont,      
+                                }}
+                                firstDay={1}
+                            />
+                        </ScrollView>
                     </View>
                 </View>
             </Modal>
@@ -732,9 +974,11 @@ const styles = StyleSheet.create({
         borderColor: 'gray',
     },
     items : {
-        padding: 10,
         borderBottomWidth: 1,
-        borderBottomColor: 'gray'
+        borderBottomColor: 'gray',
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
     },
     modal : {
         backgroundColor: 'white',
@@ -744,5 +988,16 @@ const styles = StyleSheet.create({
         borderRadius: 10,
         elevation: 5,
     },
+    modalTitle : {
+        fontSize : 21,
+        marginHorizontal: 10,
+        fontWeight: 'bold'
+    },
+    modalTxtBox : {
+        padding: 15,
+        gap: 7,
+        marginHorizontal:20,
+        borderRadius:20,
+    }
 });
 export default Attain;

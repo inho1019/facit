@@ -619,6 +619,26 @@ const Main: React.FC<Props> = ({globalFont,keys,todoList,routineList,routineId,l
             onTodoDelete(rouId)
             onRoutineDTO(routineDTO)
         }
+        if(!week[1].includes(date.getDate())) {
+            aniMain.setValue(0)
+            Animated.timing(aniOpa, {
+                toValue: 0,
+                duration: 300,
+                useNativeDriver: false,
+                easing: Easing.out(Easing.ease)
+            }).start(() => {
+                setDate(item => {
+                    const newDate : Date = new Date(item);
+                    newDate.setDate(item.getDate());
+                    if(later) {
+                        onLater(newDate)
+                        onSetLater(false)
+                        onSetLatId(-1)
+                    }
+                    return newDate;
+                });
+            })
+        }
         setOpenIdx(-1)
         aniIdx.setValue(0);
         closeRoutineModal()
@@ -802,7 +822,8 @@ const Main: React.FC<Props> = ({globalFont,keys,todoList,routineList,routineId,l
                             style={{flexDirection:'row',alignItems:'center',marginRight:20}}
                         >
                             <Text style={{color:globalFont,fontSize:18}}>통계</Text>
-                            <Image source={require(  '../../assets/image/triangle.png')} style={{width:15,height:15,marginTop:5,marginLeft:1,transform:[{rotate : '90deg'}]}}/>
+                            <Image source={ theme === "white" ? require(  '../../assets/image/triangle-black.png') : require(  '../../assets/image/triangle-white.png')} 
+                            style={{width:15,height:15,marginTop:5,marginLeft:1,transform:[{rotate : '90deg'}]}}/>
                         </Pressable>}
                     </View>
                     <View style={{flexDirection:'row',justifyContent:'space-around',marginHorizontal:10}}>
@@ -967,7 +988,7 @@ const Main: React.FC<Props> = ({globalFont,keys,todoList,routineList,routineId,l
                                                 message : '목표를 삭제하시겠습니까?',
                                                 subMessage : '※삭제된 목표는 복구할 수 없습니다.'
                                             })}>
-                                            <Image source={ require(  '../../assets/image/delete.png') } 
+                                            <Image source={ require(  '../../assets/image/delete-black.png') } 
                                             style={{width:30,height:30,marginHorizontal:3}}/>
                                         </Pressable>
                                         <Pressable 
@@ -977,7 +998,7 @@ const Main: React.FC<Props> = ({globalFont,keys,todoList,routineList,routineId,l
                                                 style={[styles.botButBox,
                                                 {width: index === openIdx ? aniIdx.interpolate({ inputRange: [0, 1], outputRange: [37, 101]  }) : 37,
                                                 marginLeft: index === openIdx ? aniIdx.interpolate({ inputRange: [0, 1], outputRange: [0, -62]  }) : 0,
-                                                backgroundColor: globalBack}]}>
+                                                backgroundColor: theme === "white" ? "white" : "#333333"}]}>
                                                 <Pressable
                                                     onPress={() => item.alarm ? onCancelAlarm(item.id) : onAlarmModal(item.id) }
                                                     disabled={index !== openIdx || item.date < new Date(new Date().setHours(0, 0, 0, 0))}>
@@ -1010,7 +1031,7 @@ const Main: React.FC<Props> = ({globalFont,keys,todoList,routineList,routineId,l
                     { !upTodoKey && !upRouKey && <View style={{paddingBottom:85}}/> }
                 </Animated.ScrollView>
             </View>}
-            {!later && !upTodoKey && !upRouKey && <View style={[styles.contentBox,{opacity: keys ? 1 : 0.8, backgroundColor : theme === "white" ? "white" : "#232323"}]}>
+            {!later && !upTodoKey && !upRouKey && <View style={[styles.contentBox,{opacity: keys ? 1 : 0.8, backgroundColor : theme === "white" ? "white" : "#333333"}]}>
                 <TextInput value={todoDTO.content} 
                     multiline
                     style={[styles.contentInput,{color:globalFont}]}
@@ -1438,7 +1459,8 @@ const styles = StyleSheet.create({
         flexDirection:'row',
         alignItems:'center',
         paddingHorizontal: 5,
-        paddingVertical: 10,
+        paddingTop: 8,
+        paddingBottom: 14,
         marginBottom: 5
     },
     rouItem : {

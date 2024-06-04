@@ -637,7 +637,7 @@ const Index: React.FC = () => {
                     visible={todoModal}
                 >
                     <View style={{flex:1,justifyContent:'center',alignItems:'center',backgroundColor:'#00000010'}}>
-                        <View style={styles.rouModal}>
+                        <View style={[styles.modal,{backgroundColor: globalBack}]}>
                             <Text style={[styles.modalTitle,{color:globalFont}]}>목표 확인</Text>
                             <Text style={{color: globalFont,fontSize:16,paddingVertical:10,paddingHorizontal:20}}>
                                 {todoList.find(fd => fd.id === todoModalId)?.content}
@@ -677,7 +677,7 @@ const Index: React.FC = () => {
                     visible={routineModal}
                 >
                     <View style={{flex:1,justifyContent:'center',alignItems:'center',backgroundColor:'#00000010'}}>
-                        <View style={styles.rouModal}>
+                        <View style={[styles.modal,{backgroundColor: globalBack}]}>
                             <Text style={[styles.modalTitle,{color:globalFont}]}>루틴 확인</Text>
                             <Text style={{color: globalFont,fontSize:16,paddingVertical:10,paddingHorizontal:20}}>
                                 {routineList.find(fd => fd.id === routineModalId)?.content}
@@ -717,7 +717,7 @@ const styles = StyleSheet.create({
         marginHorizontal: 10,
         fontWeight: 'bold'
     },
-    rouModal : {
+    modal : {
         backgroundColor: 'white',
         width: '90%',
         paddingVertical: 10,

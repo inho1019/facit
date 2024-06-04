@@ -30,7 +30,7 @@ const Setting: React.FC<Props> = ({globalFont,routineList,todoList,globalBack,th
                     ]}
                     onPress={()=>{}}
                 >
-                    <Text style={{fontSize:20,color:globalFont}}>- 루틴 복구</Text>
+                    <Text style={{fontSize:17,color:globalFont}}>- 루틴 복구</Text>
                 </Pressable>
                 <Pressable 
                    style={({pressed})  => [styles.itemButton,
@@ -41,7 +41,7 @@ const Setting: React.FC<Props> = ({globalFont,routineList,todoList,globalBack,th
                     ]}
                     onPress={()=>{}}
                 >
-                    <Text style={{fontSize:20,color:globalFont}}>- 알림 설정</Text>
+                    <Text style={{fontSize:17,color:globalFont}}>- 알림 설정</Text>
                 </Pressable>
                 <Pressable 
                    style={({pressed})  => [styles.itemButton,
@@ -49,13 +49,13 @@ const Setting: React.FC<Props> = ({globalFont,routineList,todoList,globalBack,th
                             backgroundColor: pressed ? theme === "white" ? 'whitesmoke' : '#333333' : globalBack,
                             borderBottomColor: theme === "white" ? 'whitesmoke' : '#333333',
                             flexDirection: 'row',
-                            gap: 15,
+                            gap: 10,
                         }
                     ]}
                     onPress={onTheme}
                 >
-                    <Text style={{fontSize:20,color:globalFont}}>테마</Text>
-                    <Text style={{fontSize:20,color:'darkgray'}}>{theme === 'white' ? '라이트' : '다크'} 모드</Text>
+                    <Text style={{fontSize:17,color:globalFont}}>테마</Text>
+                    <Text style={{fontSize:17,color:'darkgray'}}>{theme === 'white' ? '라이트' : '다크'} 모드</Text>
                 </Pressable>
                 <Pressable 
                    style={({pressed})  => [styles.itemButton,
@@ -66,7 +66,7 @@ const Setting: React.FC<Props> = ({globalFont,routineList,todoList,globalBack,th
                     ]}
                     onPress={()=>{}}
                 >
-                    <Text style={{fontSize:20,color:globalFont}}>- 데이터 내보내기</Text>
+                    <Text style={{fontSize:17,color:globalFont}}>- 데이터 내보내기</Text>
                 </Pressable>
                 <Pressable 
                    style={({pressed})  => [styles.itemButton,
@@ -77,7 +77,7 @@ const Setting: React.FC<Props> = ({globalFont,routineList,todoList,globalBack,th
                     ]}
                     onPress={()=>{}}
                 >
-                    <Text style={{fontSize:20,color:globalFont}}>- 데이터 가져오기</Text>
+                    <Text style={{fontSize:17,color:globalFont}}>- 데이터 가져오기</Text>
                 </Pressable>
             </ScrollView>
         </View>
