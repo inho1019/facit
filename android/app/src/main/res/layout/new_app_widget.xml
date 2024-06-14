@@ -1,0 +1,38 @@
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    style="@style/Widget.FacIt.AppWidget.Container"
+    android:id="@+id/widgetContainer"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:theme="@style/AppTheme.AppWidgetContainer"
+    >
+        <TextView
+            android:id="@+id/textView"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textAppearance="?android:attr/textAppearanceLarge"
+            android:textSize="18sp"
+            android:layout_marginLeft="2dp"
+            android:text="데이터를 불러와주세요"
+            />
+
+        <RelativeLayout
+            android:id="@+id/listContainer"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_below="@id/textView"
+            android:layout_marginTop="7dp"
+            android:paddingVertical="1dp"
+            android:paddingHorizontal="2dp"
+            android:background="@drawable/rounded_corner_background"
+            >
+                <ListView
+                    android:id="@+id/listView"
+                    android:layout_width="fill_parent"
+                    android:layout_height="match_parent"
+                    android:theme="@style/AppTheme.AppWidgetContainer"
+                    android:layout_marginHorizontal="2dp"
+                    android:layout_marginVertical="1dp"
+                    >
+                </ListView>
+        </RelativeLayout>
+</RelativeLayout>

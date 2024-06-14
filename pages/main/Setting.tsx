@@ -1,17 +1,103 @@
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Alert, Image, Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { RoutineDTO, TodoDTO } from "../Index";
+import RNFS from 'react-native-fs';
+import DocumentPicker from 'react-native-document-picker';
+import { useState } from "react";
 
-
+export type ModalDTO = {
+    active : boolean,
+    type: "import" | "importSuc" | "export" | null,
+    title?: string,
+    message?: string,
+    buttonExist: boolean
+}
 interface Props {
     routineList: RoutineDTO[]
     todoList: TodoDTO[]
     globalFont: string,
     globalBack : string;
+    todoId: number;
+    routineId: number;
     theme : "white" | "black";
     onTheme: () => void;
+    onTodo: (lsit : TodoDTO[]) => void;
+    onRoutine: (list : RoutineDTO[]) => void;
+    onTodoId: (id : number) => void;
+    onRoutineId: (id : number) => void;
+    onLoading: (bool : boolean) => void; 
 }
 
-const Setting: React.FC<Props> = ({globalFont,routineList,todoList,globalBack,theme,onTheme}) => {
+const Setting: React.FC<Props> = ({globalFont,routineList,todoList,globalBack,routineId,todoId,theme,onTheme,onTodo,onRoutine,onRoutineId,onTodoId,onLoading}) => {    
+
+    const [modalConfirm,setModalConfirm] = useState<ModalDTO>({
+        active : false,
+        type : null,
+        title : '',
+        message : '',
+        buttonExist : false
+    })
+
+    const closeConfirm = () => {
+        setModalConfirm({
+            active : false,
+            type : null,
+            title : '',
+            message : '',
+            buttonExist : false
+        })
+    }
+    
+    const fileExport = async() => { 
+        try {
+            const jsonData = [routineList,todoList,routineId,todoId]; // 예시 JSON 데이터
+      
+            const filePath = `${RNFS.DownloadDirectoryPath}/facit-${new Date().getTime()}.json`; // 저장할 경로
+      
+            await RNFS.writeFile(filePath, JSON.stringify(jsonData), 'utf8');
+      
+            setModalConfirm({
+                active : true,
+                type : 'export',
+                title : '데이터 내보내기 경로',
+                message : filePath,
+                buttonExist : false
+            })
+          } catch (error) {
+            console.log('Error saving file:', error);
+          }
+    }
+
+    const fileImport = async () => {
+        try {
+            const res : any = await DocumentPicker.pickSingle({
+                type: [DocumentPicker.types.json],
+            });
+            const filePath = res.uri;
+            onLoading(true);
+            const fileData = await RNFS.readFile(filePath, 'utf8');
+            const jsonData : [ RoutineDTO[], TodoDTO[], number, number ] = JSON.parse(fileData);
+            onRoutineId(jsonData[2]);
+            onTodoId(jsonData[3]);
+            requestAnimationFrame(() => {
+                onRoutine(jsonData[0].map((routine) => {
+                    routine.alarmDate = new Date(routine.alarmDate);
+                    routine.startDate = new Date(routine.startDate);
+                    routine.endDate = new Date(routine.endDate);
+                    return routine;
+                }));
+                onTodo(jsonData[1].map((todo) => {
+                    todo.alarmDate = new Date(todo.alarmDate);
+                    todo.date = new Date(todo.date);
+                    return todo;
+                }));
+                setTimeout(() => onLoading(false), 1000);
+                
+            })
+        } catch (error) {
+            console.log('Error picking file:', error);
+        }
+      };
+
     return(
         <View style={{flex:1}}>
             <Text style={[styles.topTitle,{color:globalFont}]}>설정</Text>
@@ -21,18 +107,7 @@ const Setting: React.FC<Props> = ({globalFont,routineList,todoList,globalBack,th
                     borderTopColor:theme === "white" ? 'whitesmoke' : '#333333',
                 }}
             >
-                <Pressable 
-                   style={({pressed})  => [styles.itemButton,
-                        {
-                            backgroundColor: pressed ? theme === "white" ? 'whitesmoke' : '#333333' : globalBack,
-                            borderBottomColor: theme === "white" ? 'whitesmoke' : '#333333'
-                        }
-                    ]}
-                    onPress={()=>{}}
-                >
-                    <Text style={{fontSize:17,color:globalFont}}>- 루틴 복구</Text>
-                </Pressable>
-                <Pressable 
+                {/* <Pressable 
                    style={({pressed})  => [styles.itemButton,
                         {
                             backgroundColor: pressed ? theme === "white" ? 'whitesmoke' : '#333333' : globalBack,
@@ -42,7 +117,7 @@ const Setting: React.FC<Props> = ({globalFont,routineList,todoList,globalBack,th
                     onPress={()=>{}}
                 >
                     <Text style={{fontSize:17,color:globalFont}}>- 알림 설정</Text>
-                </Pressable>
+                </Pressable> */}
                 <Pressable 
                    style={({pressed})  => [styles.itemButton,
                         {
@@ -64,9 +139,9 @@ const Setting: React.FC<Props> = ({globalFont,routineList,todoList,globalBack,th
                             borderBottomColor: theme === "white" ? 'whitesmoke' : '#333333'
                         }
                     ]}
-                    onPress={()=>{}}
+                    onPress={fileExport}
                 >
-                    <Text style={{fontSize:17,color:globalFont}}>- 데이터 내보내기</Text>
+                    <Text style={{fontSize:17,color:globalFont}}>데이터 내보내기</Text>
                 </Pressable>
                 <Pressable 
                    style={({pressed})  => [styles.itemButton,
@@ -75,11 +150,49 @@ const Setting: React.FC<Props> = ({globalFont,routineList,todoList,globalBack,th
                             borderBottomColor: theme === "white" ? 'whitesmoke' : '#333333'
                         }
                     ]}
-                    onPress={()=>{}}
+                    onPress={() => setModalConfirm({
+                        active : true,
+                        type : 'import',
+                        title : '데이터 가져오기',
+                        message : '기존 데이터를 덮어씁니다. 진행하시겠습니까?',
+                        buttonExist : true
+                    })}
                 >
-                    <Text style={{fontSize:17,color:globalFont}}>- 데이터 가져오기</Text>
+                    <Text style={{fontSize:17,color:globalFont}}>데이터 가져오기</Text>
                 </Pressable>
             </ScrollView>
+            <Modal
+                animationType="fade"
+                transparent={true}
+                visible={modalConfirm?.active}
+            >
+                <View style={{flex:1,justifyContent:'center',alignItems:'center',backgroundColor:'#00000010'}}>
+                    <View style={[styles.modal,{backgroundColor: globalBack}]}>
+                        <Text style={[styles.modalTitle,{color:globalFont}]}>{modalConfirm?.title}</Text>
+                        <View style={{paddingVertical:10,paddingHorizontal:20,gap:3}}>                            
+                            <Text style={{color: globalFont,fontSize:16}}>
+                                {modalConfirm?.message}
+                            </Text>
+                        </View>
+                        <View style={{flexDirection:'row',justifyContent:'space-evenly'}}>
+                            {modalConfirm.buttonExist && <Pressable
+                                onPress={closeConfirm}>
+                                    <Image source={ require(  '../../assets/image/cancel.png') } 
+                                        style={styles.modalBut}/>
+                            </Pressable>}
+                            <Pressable
+                                onPress={() => {
+                                    modalConfirm.type === 'import' && fileImport()
+                                    closeConfirm()
+                                }}
+                                >
+                                <Image source={ require(  '../../assets/image/check.png') } 
+                                    style={styles.modalBut}/>
+                            </Pressable>
+                        </View>
+                    </View>
+                </View>
+            </Modal>
         </View>
     )
 }
@@ -95,6 +208,24 @@ const styles = StyleSheet.create({
         paddingVertical : 20,
         borderBottomWidth: 3,
         borderBottomColor: 'whitesmoke',
-    }
+    },
+    modalBut : {
+        width: 35,
+        height: 35,
+        margin: 10
+    },
+    modalTitle : {
+        fontSize : 21,
+        marginHorizontal: 10,
+        fontWeight: 'bold'
+    },
+    modal : {
+        backgroundColor: 'white',
+        width: '90%',
+        paddingVertical: 10,
+        paddingHorizontal: 5,
+        borderRadius: 10,
+        elevation: 5,
+    },
 })
 export default Setting;

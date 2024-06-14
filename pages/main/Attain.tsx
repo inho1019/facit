@@ -35,6 +35,7 @@ const Attain: React.FC<Props> = ({globalFont,todoList,routineList,page,date,star
     }
 
     const scrollRef = useRef<ScrollView>(null)
+    const inputRef = useRef<TextInput>(null)
 
     const circleRef1 = useRef<AnimatedCircularProgress>(null);
     const circleRef2 = useRef<AnimatedCircularProgress>(null);
@@ -55,10 +56,11 @@ const Attain: React.FC<Props> = ({globalFont,todoList,routineList,page,date,star
 
     const [startingDay,setStartingDay] = useState<Date | null>()
     const [endingDay,setEndingDay] = useState<Date | null>()
+
     const markingDates = useMemo<any>(() => {
         if(startingDay && !endingDay) {
             return {
-                [startingDay.toISOString().split('T')[0]]: {startingDay: true, color: '#2E8DFF', textColor: 'white'}
+                [startingDay.toISOString().split('T')[0]]: {startingDay: true, color: '#2E8DFF', customTextStyle: {fontWeight: 'bold', color: 'white'}}
             }
         } else if (startingDay && endingDay) {
             let dateRange : any = {};
@@ -68,11 +70,11 @@ const Attain: React.FC<Props> = ({globalFont,todoList,routineList,page,date,star
             while (currentDate <= endingDay) {
                 let dateString : string = currentDate.toISOString().split('T')[0];
                 if (dateString === startingDay.toISOString().split('T')[0]) {
-                    dateRange[dateString] = { startingDay: true, color: '#2E8DFF', textColor: 'white' };
+                    dateRange[dateString] = { startingDay: true, color: '#2E8DFF', customTextStyle: {fontWeight: 'bold', color: 'white'}};
                 } else if (dateString === endingDay.toISOString().split('T')[0]) {
-                    dateRange[dateString] = { endingDay: true, color: '#2E8DFF', textColor: 'white' };
+                    dateRange[dateString] = { endingDay: true, color: '#2E8DFF', customTextStyle: {fontWeight: 'bold', color: 'white'} };
                 } else {
-                    dateRange[dateString] = { color: '#2E8DFF70', textColor: 'white' };
+                    dateRange[dateString] = { color: '#2E8DFF70', customTextStyle: {fontWeight: 'bold', color: 'white'} };
                 }
                 currentDate.setDate(currentDate.getDate() + 1); // 하루 증가
             }
@@ -89,7 +91,11 @@ const Attain: React.FC<Props> = ({globalFont,todoList,routineList,page,date,star
             for (let i = 0 ; i < routine.success.length ; i++) {
                 if( !routine.end || (routine.end && dateToInt(routine.success[i]) < dateToInt(routine.endDate)))  {
                     let dateString : string = new Date(routine.success[i]).toISOString().split('T')[0];
-                    dateRange[dateString] = { selected: true, selectedColor: 'tomato', customTextStyle: {fontWeight: 'bold', color: 'white'} };
+                    if(dateToInt(routine.success[i]) > dateToInt(new Date())) {
+                        dateRange[dateString] = { marked: true, dotColor: 'tomato', customTextStyle: {fontWeight: 'bold', color: 'white'} };
+                    } else {
+                        dateRange[dateString] = { selected: true, selectedColor: 'tomato', customTextStyle: {fontWeight: 'bold', color: 'white'} };
+                    }
                 }
             }
         }
@@ -236,7 +242,9 @@ const Attain: React.FC<Props> = ({globalFont,todoList,routineList,page,date,star
                 typeNumber === 3 ? "year" :
                 "custom"
             )
-            if ( typeNumber === 1) {
+            if ( typeNumber === 0) {
+                onDate(new Date())
+            } else if ( typeNumber === 1) {
                 const setStartDate = new Date()
                 setStartDate.setDate(setStartDate.getDate()-( nowDate.getDay() === 0 ? 7 : nowDate.getDay() )+1)
                 setCalendarModal(false)
@@ -307,6 +315,7 @@ const Attain: React.FC<Props> = ({globalFont,todoList,routineList,page,date,star
             circleRef2.current?.animate(0,1,Easing.quad)
             aniTot.setValue(0);
             aniTxt.setValue(0);
+            inputRef.current?.blur();
             setCalendarModal(false);
             setSearch('');
         }
@@ -404,8 +413,8 @@ const Attain: React.FC<Props> = ({globalFont,todoList,routineList,page,date,star
 
     const sinceUntil = (routineDTO : RoutineDTO | undefined) => {
         if(routineDTO) {
-            return routineDTO.end ? `${(new Date(routineDTO.startDate).getMonth()+1).toString().padStart(2, '0')}월 ${(new Date(routineDTO.startDate).getDate()).toString().padStart(2, '0')}일 - ${(new Date(routineDTO.endDate).getMonth()+1).toString().padStart(2, '0')}월 ${(new Date(routineDTO.endDate).getDate()).toString().padStart(2, '0')}일` :
-            `${(new Date(routineDTO.startDate).getMonth()+1).toString().padStart(2, '0')}월 ${(new Date(routineDTO.startDate).getDate()).toString().padStart(2, '0')}일 - 진행중`
+            return routineDTO.end ? `${(new Date(routineDTO.startDate).getFullYear().toString().slice(-2))}.${(new Date(routineDTO.startDate).getMonth()+1).toString().padStart(2, '0')}.${(new Date(routineDTO.startDate).getDate()).toString().padStart(2, '0')} ~ ${(new Date(routineDTO.endDate).getFullYear().toString().slice(-2))}.${(new Date(routineDTO.endDate).getMonth()+1).toString().padStart(2, '0')}.${(new Date(routineDTO.endDate).getDate()).toString().padStart(2, '0')}` :
+            `${(new Date(routineDTO.startDate).getFullYear().toString().slice(-2))}.${(new Date(routineDTO.startDate).getMonth()+1).toString().padStart(2, '0')}.${(new Date(routineDTO.startDate).getDate()).toString().padStart(2, '0')} ~`
         } 
     }
 
@@ -468,7 +477,7 @@ const Attain: React.FC<Props> = ({globalFont,todoList,routineList,page,date,star
                                 aniTxt.setValue(0);
                             }}
                         >
-                            <Image source={require(  '../../assets/image/arrow.png')} 
+                            <Image source={theme === "white" ? require('../../assets/image/arrow-black.png') : require('../../assets/image/arrow-white.png')} 
                                 style={{width:25,height:25, marginTop: 15, transform:[{rotate : '-90deg'}]}}/>
                         </Pressable>
                         <Pressable
@@ -488,7 +497,7 @@ const Attain: React.FC<Props> = ({globalFont,todoList,routineList,page,date,star
                                 aniTxt.setValue(0);
                             }}
                         >
-                            <Image source={require(  '../../assets/image/arrow.png')} 
+                            <Image source={theme === "white" ? require('../../assets/image/arrow-black.png') : require('../../assets/image/arrow-white.png')} 
                                 style={{width:25, height:25, marginTop: 15, transform:[{rotate : '90deg'}]}}/>
                         </Pressable> : <View style={{width:25,height:25}}/>}
                     </View> :
@@ -502,7 +511,7 @@ const Attain: React.FC<Props> = ({globalFont,todoList,routineList,page,date,star
                                 aniTxt.setValue(0);
                             }}
                         >
-                            <Image source={require(  '../../assets/image/arrow.png')} 
+                            <Image source={theme === "white" ? require('../../assets/image/arrow-black.png') : require('../../assets/image/arrow-white.png')} 
                                 style={{width:25,height:25, marginTop: 15, transform:[{rotate : '-90deg'}]}}/>
                         </Pressable>
                         <Pressable
@@ -518,7 +527,7 @@ const Attain: React.FC<Props> = ({globalFont,todoList,routineList,page,date,star
                             <Text style={[styles.h2,{color:globalFont, marginTop: 10}]}>
                                 {   dateToInt(nowDate) - (86400000 * 7) < dateToInt(startDate) ? '이번주' :
                                     dateToInt(nowDate) - (86400000 * 14) < dateToInt(startDate)? '저번주' :
-                                    `${(startDate.getMonth()+1).toString().padStart(2, '0')}월 ${(startDate.getDate()).toString().padStart(2, '0')}일 - ${(endDate.getMonth()+1).toString().padStart(2, '0')}월 ${(endDate.getDate()).toString().padStart(2, '0')}일`}
+                                    `${(startDate.getMonth()+1).toString().padStart(2, '0')}월 ${(startDate.getDate()).toString().padStart(2, '0')}일 ~ ${(endDate.getMonth()+1).toString().padStart(2, '0')}월 ${(endDate.getDate()).toString().padStart(2, '0')}일`}
                             </Text>
                         </Pressable>
                         { dateToInt(nowDate) - (86400000 * 7) < dateToInt(startDate) ? 
@@ -530,7 +539,7 @@ const Attain: React.FC<Props> = ({globalFont,todoList,routineList,page,date,star
                                 aniTxt.setValue(0);
                             }}
                         >
-                            <Image source={require(  '../../assets/image/arrow.png')} 
+                            <Image source={theme === "white" ? require('../../assets/image/arrow-black.png') : require('../../assets/image/arrow-white.png')} 
                                 style={{width:25, height:25, marginTop: 15, transform:[{rotate : '90deg'}]}}/>
                         </Pressable>}
                     </View> :
@@ -545,7 +554,7 @@ const Attain: React.FC<Props> = ({globalFont,todoList,routineList,page,date,star
                                 onEndDate(setEndDate)
                             }}
                         >
-                            <Image source={require(  '../../assets/image/arrow.png')} 
+                            <Image source={theme === "white" ? require('../../assets/image/arrow-black.png') : require('../../assets/image/arrow-white.png')} 
                                 style={{width:25,height:25, marginTop: 15, transform:[{rotate : '-90deg'}]}}/>
                         </Pressable>
                         <Pressable
@@ -574,7 +583,7 @@ const Attain: React.FC<Props> = ({globalFont,todoList,routineList,page,date,star
                                 onEndDate(dateToInt(setEndDate) > dateToInt(nowDate) ? nowDate : setEndDate)
                             }}
                         >
-                            <Image source={require(  '../../assets/image/arrow.png')} 
+                            <Image source={theme === "white" ? require('../../assets/image/arrow-black.png') : require('../../assets/image/arrow-white.png')} 
                                 style={{width:25, height:25, marginTop: 15, transform:[{rotate : '90deg'}]}}/>
                         </Pressable>}
                     </View> : 
@@ -590,7 +599,7 @@ const Attain: React.FC<Props> = ({globalFont,todoList,routineList,page,date,star
                                 onEndDate(dateToInt(setEndDate) > dateToInt(nowDate) ? nowDate : setEndDate)
                             }}
                         >
-                            <Image source={require(  '../../assets/image/arrow.png')} 
+                            <Image source={theme === "white" ? require('../../assets/image/arrow-black.png') : require('../../assets/image/arrow-white.png')} 
                                 style={{width:25,height:25, marginTop: 15, transform:[{rotate : '-90deg'}]}}/>
                         </Pressable>
                         <Pressable
@@ -619,7 +628,7 @@ const Attain: React.FC<Props> = ({globalFont,todoList,routineList,page,date,star
                                 onEndDate(dateToInt(setEndDate) > dateToInt(nowDate) ? nowDate : setEndDate)
                             }}
                         >
-                            <Image source={require(  '../../assets/image/arrow.png')} 
+                            <Image source={theme === "white" ? require('../../assets/image/arrow-black.png') : require('../../assets/image/arrow-white.png')} 
                                 style={{width:25, height:25, marginTop: 15, transform:[{rotate : '90deg'}]}}/>
                         </Pressable>}
                     </View> :
@@ -633,7 +642,7 @@ const Attain: React.FC<Props> = ({globalFont,todoList,routineList,page,date,star
                         >
                             <Text style={[styles.h2,{color:globalFont, marginTop: 10}]}>
                                 { dateToInt(startDate) === dateToInt(endDate) ? `${(startDate.getMonth()+1).toString().padStart(2, '0')}월 ${(startDate.getDate()).toString().padStart(2, '0')}일` :
-                                    `${(startDate.getMonth()+1).toString().padStart(2, '0')}월 ${(startDate.getDate()).toString().padStart(2, '0')}일 - ${(endDate.getMonth()+1).toString().padStart(2, '0')}월 ${(endDate.getDate()).toString().padStart(2, '0')}일`
+                                    `${(startDate.getMonth()+1).toString().padStart(2, '0')}월 ${(startDate.getDate()).toString().padStart(2, '0')}일 ~ ${(endDate.getMonth()+1).toString().padStart(2, '0')}월 ${(endDate.getDate()).toString().padStart(2, '0')}일`
                                 }
                             </Text>
                         </Pressable>
@@ -682,7 +691,7 @@ const Attain: React.FC<Props> = ({globalFont,todoList,routineList,page,date,star
                             <Animated.View style={{
                                 height:Math.floor(windowWidth*0.5 - 50) * 0.25,
                                 width: aniTot,
-                                backgroundColor:theme === "white" ? 'darkgray' : "#222222",
+                                backgroundColor:theme === "white" ? 'lightgray' : "#222222",
                                 borderRadius:Math.floor(windowWidth*0.5 - 50) * 0.5}}>
                                     <Animated.Text style={{width:50,fontWeight:'bold', opacity: aniTxt, color:globalFont, position:'absolute', height:Math.floor(windowWidth*0.5 - 50) * 0.25,left: 10,textAlignVertical:'center'}}>{Math.floor(totalFill)}%</Animated.Text>
                             </Animated.View>
@@ -694,6 +703,7 @@ const Attain: React.FC<Props> = ({globalFont,todoList,routineList,page,date,star
                 <View style={{flexDirection:'row',justifyContent:'center',alignItems:'center',paddingHorizontal:10,gap:15,marginTop:10}}>
                     <Text style={[styles.h2,{color:globalFont, marginLeft: 5,marginBottom:10,flex:1}]}>달성</Text>
                     <TextInput 
+                        ref={inputRef}
                         style={{backgroundColor: globalBack,paddingHorizontal:5,paddingVertical:3,flex:1,
                                 marginVertical:5,marginLeft:2,borderWidth:1,borderColor: theme === "white" ? 'darkgray' : 'gray',color:globalFont}}
                         placeholder="검색"
@@ -731,13 +741,13 @@ const Attain: React.FC<Props> = ({globalFont,todoList,routineList,page,date,star
                                         setRoutineModal(true)
                                     }}
                                 >
-                                    <Image source={ theme === "white" ? require(  '../../assets/image/chart-black.png') : require(  '../../assets/image/chart-white.png')}  style={{width:25,height:25,marginRight:10}}/>
+                                    <Image source={ theme === "white" ? require(  '../../assets/image/chart-black.png') : require(  '../../assets/image/chart-white.png')}  style={{width:20,height:20,marginRight:10}}/>
                                 </Pressable>
                             </Animated.View>) :
                             routineFillList.filter(rou => rou.content.includes(search)).map((item,index) => 
                             <Animated.View key={`${item}_${index}`} style={[styles.items,{opacity:aniTxt}]}>
                                 <View
-                                    style={{position:'absolute',width: `${routineSuc(item) / routineTot(item,false) * 100}%`,height:7,backgroundColor: 'darkgray',bottom:-1}}
+                                    style={{position:'absolute',width: `${routineSuc(item) / routineTot(item,false) * 100}%`,height:7,backgroundColor: 'tomato',bottom:-2}}
                                 />
                                 <Text style={{color:globalFont,margin:10,flex:1}}>{item.content}</Text>
                                 <Pressable
@@ -746,7 +756,7 @@ const Attain: React.FC<Props> = ({globalFont,todoList,routineList,page,date,star
                                         setRoutineModal(true)
                                     }}
                                 >
-                                    <Image source={ theme === "white" ? require(  '../../assets/image/chart-black.png') : require(  '../../assets/image/chart-white.png')}  style={{width:25,height:25,marginRight:10}}/>
+                                    <Image source={ theme === "white" ? require(  '../../assets/image/chart-black.png') : require(  '../../assets/image/chart-white.png')}  style={{width:20,height:20,marginRight:10}}/>
                                 </Pressable>
                             </Animated.View>)
                         }
@@ -832,23 +842,19 @@ const Attain: React.FC<Props> = ({globalFont,todoList,routineList,page,date,star
                                         style={{width:30,height:30,marginRight:5}}/>
                                 </Pressable>
                             </View>
-                            <Text style={{color:'gray',marginTop:20,marginLeft:30,marginBottom:3}}>
-                                {sinceUntil(routineList.find(item => item.id === routineId))}
-                            </Text>
                             <View style={[styles.modalTxtBox,{backgroundColor:theme === "white" ? 'whitesmoke' : '#222222'}]}>
                                 <View style={{flexDirection:'row',justifyContent:"space-between"}}>
-                                    <View style={{flexDirection:'row',gap:5}}>
+                                    <View style={{flexDirection:'row',gap:3}}>
                                         {routineList.find(item => item.id === routineId)?.term.map((item,index) => 
                                             item && 
-                                            <Text key={`${item}_${index}`} style={{color:globalFont,backgroundColor:theme === "white" ? 'lightgray' : "#444444",width:21,height:21,borderRadius:10.5,textAlign:'center'}}>
+                                            <Text key={`${item}_${index}`} style={{color:globalFont,backgroundColor:theme === "white" ? 'white' : "#444444",width:20,height:20,borderRadius:10,textAlign:'center',fontSize:12}}>
                                                 {index === 1 ? '월' : index === 2 ? '화' : index === 3 ? '수' : index === 4 ? '목' : index === 5 ? '금' : index === 6  ? '토' : '일'}
                                             </Text>
                                         )}
                                     </View>
-                                    {routineList.find(item => item.id === routineId)?.alarm && 
-                                    <Text style={{color:globalFont,backgroundColor:theme === "white" ? 'lightgray' : "#444444",height:21,borderRadius:10.5,textAlign:'center',paddingHorizontal:7}}>
-                                        {routineList.find(item => item.id === routineId)?.alarmDate.getHours().toString().padStart(2, '0')} : {routineList.find(item => item.id === routineId)?.alarmDate.getMinutes().toString().padStart(2, '0')}
-                                    </Text>}
+                                    <Text style={{color:globalFont,backgroundColor:theme === "white" ? 'white' : "#444444",height:20,borderRadius:10,textAlign:'center',paddingHorizontal:7,fontSize:12,paddingTop:2}}>
+                                        {sinceUntil(routineList.find(item => item.id === routineId))}
+                                    </Text>
                                 </View>
                                 <Text style={{color:globalFont,margin:5}}>
                                     {routineList.find(item => item.id === routineId)?.content}
@@ -856,18 +862,16 @@ const Attain: React.FC<Props> = ({globalFont,todoList,routineList,page,date,star
                             </View>
                             { type !== "date" &&
                                 <View style={{paddingHorizontal:30,marginTop:20}}>
-                                    <Text style={{fontWeight:'bold', color:globalFont,marginLeft:10,marginBottom:2}}>
-                                    { dateToInt(startDate) === dateToInt(endDate) ? `${(startDate.getMonth()+1).toString().padStart(2, '0')}월 ${(startDate.getDate()).toString().padStart(2, '0')}일` :
-                                        `${(startDate.getMonth()+1).toString().padStart(2, '0')}월 ${(startDate.getDate()).toString().padStart(2, '0')}일 - ${(endDate.getMonth()+1).toString().padStart(2, '0')}월 ${(endDate.getDate()).toString().padStart(2, '0')}일`
-                                    } 달성도
+                                    <Text style={{color:globalFont,marginLeft:10,marginBottom:2}}>
+                                        기간 달성도
                                     </Text>
-                                    <View style={{width:'100%',backgroundColor: theme === "white" ? 'aliceblue' : '#444444',borderRadius:Math.floor(windowWidth*0.5 - 50) * 0.5,overflow:'hidden'}}>
+                                    <View style={{width:'100%',backgroundColor: theme === "white" ? 'aliceblue' : '#444444',borderRadius:Math.floor(windowWidth*0.5 - 50) * 0.1,overflow:'hidden'}}>
                                         <Animated.View style={{
                                             height:Math.floor(windowWidth*0.5 - 50) * 0.25,
                                             width: aniBarA,
                                             backgroundColor:theme === "white" ? '#2E8DFF' : "#222222",
-                                            borderRadius:Math.floor(windowWidth*0.5 - 50) * 0.5}}>
-                                                <Animated.Text style={{width:50,fontWeight:'bold', opacity: aniMoTxt, color:globalFont, position:'absolute', 
+                                            borderRadius:Math.floor(windowWidth*0.5 - 50) * 0.1}}>
+                                                <Animated.Text style={{width:50,fontWeight:'bold', opacity: aniMoTxt, color:'white', position:'absolute', 
                                                     height:Math.floor(windowWidth*0.5 - 50) * 0.25,left: 10,textAlignVertical:'center'}}>
                                                         {routineSuc(routineList.find(item => item.id === routineId))}/{routineTot(routineList.find(item => item.id === routineId),false)}
                                                 </Animated.Text>
@@ -876,18 +880,16 @@ const Attain: React.FC<Props> = ({globalFont,todoList,routineList,page,date,star
                                 </View>
                             }
                             <View style={{paddingHorizontal:30,marginTop:20}}>
-                                <Text style={{fontWeight:'bold', color:globalFont,marginLeft:10,marginBottom:2}}>
-                                { routineList.find(item => item.id === routineId)?.end ?
-                                    '루틴 시작일 - 종료일 달성도' : '루틴 시작일 - 현재일 달성도'
-                                }
+                                <Text style={{color:globalFont,marginLeft:10,marginBottom:2}}>
+                                    전체 달성도
                                 </Text>
-                                <View style={{width:'100%',backgroundColor: theme === "white" ? 'snow' : '#444444',borderRadius:Math.floor(windowWidth*0.5 - 50) * 0.5,overflow:'hidden'}}>
+                                <View style={{width:'100%',backgroundColor: theme === "white" ? 'snow' : '#444444',borderRadius:Math.floor(windowWidth*0.5 - 50) * 0.1,overflow:'hidden'}}>
                                     <Animated.View style={{
                                         height:Math.floor(windowWidth*0.5 - 50) * 0.25,
                                         width: aniBarB,
                                         backgroundColor:theme === "white" ? 'tomato' : "#222222",
-                                        borderRadius:Math.floor(windowWidth*0.5 - 50) * 0.5}}>
-                                            <Animated.Text style={{width:50,fontWeight:'bold', opacity: aniMoTxt, color:globalFont, position:'absolute', 
+                                        borderRadius:Math.floor(windowWidth*0.5 - 50) * 0.1}}>
+                                            <Animated.Text style={{width:50,fontWeight:'bold', opacity: aniMoTxt, color:'white', position:'absolute', 
                                                 height:Math.floor(windowWidth*0.5 - 50) * 0.25,left: 10,textAlignVertical:'center'}}>
                                                     {routineNowSuc(routineList.find(item => item.id === routineId))}/{routineTot(routineList.find(item => item.id === routineId),true)}
                                             </Animated.Text>
@@ -987,9 +989,10 @@ const styles = StyleSheet.create({
         fontWeight: 'bold'
     },
     modalTxtBox : {
-        padding: 15,
+        marginTop: 20,
+        padding: 13,
         gap: 7,
-        marginHorizontal:20,
+        marginHorizontal:25,
         borderRadius:20,
     }
 });

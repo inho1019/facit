@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Animated, Dimensions, Easing, Image, Keyboard, Modal, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, TouchableWithoutFeedback, View } from 'react-native';
+import { Animated, Dimensions, Easing, Image, Keyboard, Modal, PanResponder, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, TouchableWithoutFeedback, View } from 'react-native';
 import { Calendar, LocaleConfig } from 'react-native-calendars'
 import { RoutineDTO, TodoDTO } from '../Index';
 
@@ -33,6 +33,8 @@ interface Props {
     latId : number;
     globalBack : string;
     theme : "white" | "black";
+    onMoveTodo: (frontid : number,moveid : number, dto: TodoDTO) => void;
+    onMoveRoutine: (frontid : number,moveid : number, dto: RoutineDTO) => void;
     onSetLater: (bool: boolean) => void;
     onSetLatId: (id: number) => void;
     onTodoAlarm: (alarmId: number, newDate: Date) => void;
@@ -53,10 +55,19 @@ interface Props {
 
 const Main: React.FC<Props> = ({globalFont,keys,todoList,routineList,routineId,later, latId, globalBack, theme,
         onSetLatId, onSetLater,onTodoAlarm,onCancelAlarm,onAttain,onRoutineUpdateContent, onTodoUpdateContent,
-        onTodoDTO,onTodoCheck,onTodoDelete,onRoutineEnd,onRoutineRe,onRoutineUpdate,
+        onTodoDTO,onTodoCheck,onTodoDelete,onRoutineEnd,onRoutineRe,onRoutineUpdate, onMoveTodo, onMoveRoutine,
         onRoutineCheck,onRoutineDTO,onMove}) => {
 
+
+    const dateToInt = (date : Date | string) => {
+        const newDate = new Date(date)
+        const numDate = new Date(newDate.getFullYear(),newDate.getMonth(),newDate.getDate())
+
+        return numDate.getTime();
+    }
+
     const mainRef = useRef<ScrollView>(null)
+    const inputRef = useRef<TextInput>(null)
 
     const [contentHeight, setContentHeight] = useState(0);
     
@@ -110,9 +121,59 @@ const Main: React.FC<Props> = ({globalFont,keys,todoList,routineList,routineId,l
 
     const [calHeight,setCalHeight] = useState<number>(300)
 
+    const [open,setOpen] = useState<boolean>(false)
+    const [moveMode,setMoveMode] = useState<'none' | 'todo' | 'routine'>('none')
+    const [moveId,setMoveId] = useState<number>(-1)
+    const [moveIdx,setMoveIdx] = useState<number>(-1)
+
+    let pressTimeout: NodeJS.Timeout | undefined;
+
     const onViewLayout = (event : any) => {
         setCalHeight(event.nativeEvent.layout.height);
     };
+
+    const onMoveMode = (id : number,idx : number,mode : 'none' | 'todo' | 'routine') => {
+        if(moveMode !== mode) {
+            pressTimeout = setTimeout(() => {
+                setOpenIdx(-1)
+                setMoveMode(mode)
+                setMoveId(id)
+                setMoveIdx(idx)
+                Animated.timing(aniMv, {
+                    toValue: 1,
+                    duration: 300,
+                    useNativeDriver: false,
+                    easing: Easing.out(Easing.ease)
+                }).start(() => {
+                    Animated.timing(aniMvAr, {
+                        toValue: 1,
+                        duration: 300,
+                        useNativeDriver: false,
+                        easing: Easing.out(Easing.ease)
+                    }).start();
+                });
+            },800)
+        }
+    }  
+
+    const cancelMoveMode = () => {
+        setMoveMode('none')
+        setMoveId(-1)
+        aniMv.setValue(0)
+        aniMvAr.setValue(0)
+    } 
+
+    const moveTodo = (id : number) => {
+        const todoDTO : TodoDTO = todoList.find(fd => fd.id === moveId) as TodoDTO;
+        onMoveTodo(id,moveId,todoDTO)
+        cancelMoveMode()
+    }
+
+    const moveRou = (id : number) => {
+        const routineDTO : RoutineDTO = routineList.find(fd => fd.id === moveId) as RoutineDTO;
+        onMoveRoutine(id,moveId,routineDTO)
+        cancelMoveMode()
+    }
 
     ///////////애니메이션///////////////
     const aniCal = useRef(new Animated.Value(1)).current;
@@ -123,6 +184,8 @@ const Main: React.FC<Props> = ({globalFont,keys,todoList,routineList,routineId,l
     const aniMain = useRef(new Animated.Value(1)).current
     const anirAl = useRef(new Animated.Value(0.2)).current
     const aniuAl = useRef(new Animated.Value(0.2)).current
+    const aniMv = useRef(new Animated.Value(0)).current
+    const aniMvAr = useRef(new Animated.Value(0)).current
 
     const aniFola = (num : number) => {
         Animated.timing(aniCal, {
@@ -173,20 +236,38 @@ const Main: React.FC<Props> = ({globalFont,keys,todoList,routineList,routineId,l
 
     const calAni = {
         height: aniCal.interpolate({
-            inputRange: [0, 1],
-            outputRange: [calHeight,170],
+            inputRange: [0, 1, 2],
+            outputRange: [calHeight,170, 75],
         }),
         opacity : aniCal.interpolate({
-            inputRange: [0, 1],
-            outputRange: [1, 0],
+            inputRange: [0, 1, 2],
+            outputRange: [1, 0, 0],
         })
     };
 
     const wekAni = {
+        height: aniWek.interpolate({
+            inputRange: [0, 1, 2],
+            outputRange: [170, 170, 75],
+        }),
         opacity : aniWek.interpolate({
-            inputRange: [0, 1],
-            outputRange: [0, 1],
+            inputRange: [0, 1 ,2],
+            outputRange: [0, 1, 1],
         })
+    };
+
+    const mvAni = {
+        height: aniMv.interpolate({
+            inputRange: [0, 1],
+            outputRange: [25, 25],
+        }),
+    };
+
+    const mvArAni = {
+        marginLeft: aniMvAr.interpolate({
+            inputRange: [0, 1],
+            outputRange: [-40, 15],
+        }),
     };
 
     useEffect(() => {
@@ -235,6 +316,46 @@ const Main: React.FC<Props> = ({globalFont,keys,todoList,routineList,routineId,l
             }).start()
         }
     },[routineAlarm])
+
+    const panResponder = PanResponder.create({
+        onStartShouldSetPanResponder: () => true,
+        onPanResponderRelease: (_ , gestureState) => {
+            if(gestureState.dy < -50) {
+                if(!open) {
+                    if(fold) {
+                        if(!later) {
+                            setOpen(true)
+                            Animated.timing(aniWek, {
+                                toValue: 2,
+                                duration: 500,
+                                useNativeDriver: false,
+                                easing: Easing.out(Easing.ease)
+                            }).start(() => {});
+                        }
+                    } else {
+                        aniFola(1)
+                    }
+                }
+
+            }
+            if(gestureState.dy > 50) {
+                if(fold) {
+                    if(open) {
+                        setOpen(false)
+                        Animated.timing(aniWek, {
+                            toValue: 1,
+                            duration: 500,
+                            useNativeDriver: false,
+                            easing: Easing.out(Easing.ease)
+                        }).start();
+                    } else {
+                        aniFolb(0)
+                    }
+                }
+            }
+        },
+    })
+
     ////////////달력 캐러셀/////////////
     const scrollRef = useRef<ScrollView>(null)
 
@@ -290,6 +411,7 @@ const Main: React.FC<Props> = ({globalFont,keys,todoList,routineList,routineId,l
             easing: Easing.out(Easing.ease)
         }).start()
 
+        cancelMoveMode()
         setOpenIdx(-1)
         aniIdx.setValue(0);
     },[date,fold,alarm])
@@ -720,13 +842,6 @@ const Main: React.FC<Props> = ({globalFont,keys,todoList,routineList,routineId,l
         })
     }
 
-    const dateToInt = (date : Date | string) => {
-        const newDate = new Date(date)
-        const numDate = new Date(newDate.getFullYear(),newDate.getMonth(),newDate.getDate())
-
-        return numDate.getTime();
-    }
-
     useEffect(() => {
         setOpenIdx(-1)
         aniIdx.setValue(0);
@@ -747,7 +862,22 @@ const Main: React.FC<Props> = ({globalFont,keys,todoList,routineList,routineId,l
         }
     },[upRouKey])
 
+    useEffect(() => {
+        if(!keys) {
+            inputRef.current?.blur()
+        } else {
+            clearTimeout(pressTimeout)
+        }
+    },[keys])
+
+    useEffect(() => {
+        if(openIdx !== -1) {
+            cancelMoveMode()
+        }
+    },[openIdx])
+
     return (
+        <TouchableWithoutFeedback onPress={() => onOpenIndex(-1)} disabled={ openIdx === -1 || aning }>
         <View style={{flex:1}}>
             {!fold && 
                 <Animated.View style={[calAni,{overflow:'scroll'}]}>
@@ -794,7 +924,7 @@ const Main: React.FC<Props> = ({globalFont,keys,todoList,routineList,routineId,l
                 </Animated.View>
             }
             {fold &&
-            <Animated.View style={[wekAni,{overflow:'hidden',height: 170}]}>
+            <Animated.View style={[wekAni,{overflow:'hidden'}]}>
                 <View style={{height: 170}}>
                     <View style={{flexDirection:'row',justifyContent:'space-between',alignItems:'center'}}>
                         <Pressable
@@ -821,9 +951,9 @@ const Main: React.FC<Props> = ({globalFont,keys,todoList,routineList,routineId,l
                             onPress={() => onAttain(date)}
                             style={{flexDirection:'row',alignItems:'center',marginRight:20}}
                         >
-                            <Text style={{color:globalFont,fontSize:18}}>통계</Text>
-                            <Image source={ theme === "white" ? require(  '../../assets/image/triangle-black.png') : require(  '../../assets/image/triangle-white.png')} 
-                            style={{width:15,height:15,marginTop:5,marginLeft:1,transform:[{rotate : '90deg'}]}}/>
+                            <Text style={{color:globalFont,fontSize:17}}>확인</Text>
+                            <Image source={ theme === "white" ? require(  '../../assets/image/arrow-black.png') : require(  '../../assets/image/arrow-white.png')} 
+                            style={{width:15,height:15,marginTop:5,transform:[{rotate : '90deg'}]}}/>
                         </Pressable>}
                     </View>
                     <View style={{flexDirection:'row',justifyContent:'space-around',marginHorizontal:10}}>
@@ -862,20 +992,30 @@ const Main: React.FC<Props> = ({globalFont,keys,todoList,routineList,routineId,l
                     </View>
                 </View>
             </Animated.View>}
-            <Pressable 
+            {/* {!open && <Pressable 
                 onPress={() => fold ? aniFolb(0) : aniFola(1)}
-                style={{alignItems:'center',borderBottomColor: theme === "white" ? 'whitesmoke' : '#333333',borderBottomWidth:15,paddingBottom:5}}>
-                <Animated.Image source={require(  '../../assets/image/arrow.png')} 
+                style={{alignItems:'center',paddingBottom:5}}>
+                <Animated.Image source={ require('../../assets/image/arrow-black.png')} 
                     style={{width:40,height:40,
+                        opacity: aniWek.interpolate({ inputRange: [0, 1, 2], outputRange: [1, 1, 0] }),
                         transform:[{rotate : aniArr.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '180deg'] })}]}}/>
-            </Pressable>
-            {later && <Pressable
-                onPress={() => onSetLater(false)}
-                style={{flex:1,justifyContent:'center',alignItems:'center'}}>
-                <Text style={{color:globalFont,fontSize: 17}}>목표 이동</Text>
-                <Text style={{color:globalFont,fontSize: 17}}>이동할 날짜를 선택하세요</Text>
-            </Pressable>}
-            {!later && <View style={{flex:1}}>
+            </Pressable>} */}
+            {later && 
+            <View style={{flex:1,elevation:20,backgroundColor:globalBack,borderTopRightRadius:20,borderTopLeftRadius:20}}>
+                <View {...panResponder.panHandlers} style={{height:35,paddingTop:1}}>
+                    <Image style={{width:32,height:32,alignSelf:'center'}} source={require(  '../../assets/image/drag.png')}/>
+                </View>
+                <Pressable
+                    onPress={() => onSetLater(false)}
+                    style={{flex:1,justifyContent:'center',alignItems:'center'}}>
+                    <Text style={{color:globalFont,fontSize: 17}}>목표 이동</Text>
+                    <Text style={{color:globalFont,fontSize: 17}}>이동할 날짜를 선택하세요</Text>
+                </Pressable>
+            </View>}
+            {!later && <View style={{flex:1,elevation:20,backgroundColor:globalBack,borderTopRightRadius:20,borderTopLeftRadius:20}}>
+                <View {...panResponder.panHandlers} style={{height:35,paddingTop:1}}>
+                    <Image style={{width:32,height:32,alignSelf:'center'}} source={require(  '../../assets/image/drag.png')}/>
+                </View>
                 <Animated.ScrollView
                     ref={mainRef}
                     style={{opacity: aniMain}}
@@ -884,169 +1024,268 @@ const Main: React.FC<Props> = ({globalFont,keys,todoList,routineList,routineId,l
                     <View>
                         {routineList.filter(rou => dateToInt(new Date(rou.startDate)) <= dateToInt(date) && 
                             (rou.end ? dateToInt(rou.endDate) > dateToInt(date) : true) && rou.term[date.getDay()]).length > 0 && 
-                            <Text style={[styles.h2,{color:globalFont,marginTop:10}]}>루틴</Text>}
+                            <Text style={[styles.h2,{color:globalFont}]}>루틴</Text>}
+                        {moveMode === 'routine' && routineList.filter(rou => dateToInt(new Date(rou.startDate)) <= dateToInt(date) && 
+                            (rou.end ? dateToInt(rou.endDate) > dateToInt(date) : true) && rou.term[date.getDay()]).length > 0 &&
+                            <Pressable
+                                onPress={() => moveRou(-1)}
+                            >
+                                <Animated.View
+                                    style={[mvAni,{marginTop:7,opacity:aniMv,backgroundColor:theme === "white" ? 'whitesmoke' : '#333333',flexDirection:'row',alignItems:'center',overflow:'hidden'}]}
+                                >
+                                    <Animated.Image 
+                                            source={require('../../assets/image/arrow-black.png')} 
+                                            style={[mvArAni,{width:20,height:20,transform:[{rotate : '90deg'}]}]}/>
+                                </Animated.View>
+                            </Pressable>
+                        }
                         {routineList.filter(rou => dateToInt(new Date(rou.startDate)) <= dateToInt(date) && 
                             (rou.end ? dateToInt(rou.endDate) > dateToInt(date) : true) && rou.term[date.getDay()])
                             .map((item,index) => 
-                                <View key={`${item}_${index}`}
-                            style={[styles.rouItem]}>
-                            <Pressable onPress={ () => onRouCheck(item.id) }>
-                                <Image source={ item.success.findIndex(item => dateToInt(item) === dateToInt(date)) !== -1 ? 
-                                    require(  '../../assets/image/check.png') : require(  '../../assets/image/check_null.png')} 
-                                    style={styles.checkImg}/>
-                            </Pressable>
-                            <View style={styles.goalContent}>
-                                 <View style={{flexDirection:'row',gap: 8}}>
-                                    { item.alarm &&<Text style={styles.alTxt}>
-                                        {item.alarmDate.getHours().toString().padStart(2, '0')} : {item.alarmDate.getMinutes().toString().padStart(2, '0')}
-                                    </Text>}
-                                    <Text style={[styles.alTxt,{backgroundColor:'#2E8DFF'}]}>START D+{ -(dateToInt(item.startDate) - dateToInt(date))/86400000 }</Text>
-                                    { item.end && 
-                                        <Text style={[styles.alTxt,{backgroundColor:'tomato'}]}>END D-{ (dateToInt(item.endDate) - dateToInt(date))/86400000 }</Text>
-                                    }
-                                </View>
-                                { dateToInt(date) >= dateToInt(new Date()) ? <TextInput
-                                    multiline
-                                    onFocus={() => {
-                                        requestAnimationFrame(() => {
-                                            setUpRouId(item.id)
-                                            setUpRouKey(true)
-                                            setUpRouContent(item.content)
-                                        })
-                                    }}
-                                    onBlur={() => {
-                                        setUpRouKey(false)
-                                    }}
-                                    onChangeText={(text) => {setUpRouContent(text)}}
-                                    style={{textDecorationLine:  item.success.findIndex(item => dateToInt(item) === dateToInt(date)) 
-                                    !== -1 ? 'line-through' : 'none',color: item.success.findIndex(item => dateToInt(item) === dateToInt(date)) 
-                                    !== -1 ? 'darkgray' : globalFont,fontSize:16, padding:0}}
-                                >
-                                {item.content}
-                                </TextInput> :
-                                <Text style={{textDecorationLine:  item.success.findIndex(item => dateToInt(item) === dateToInt(date)) 
-                                    !== -1 ? 'line-through' : 'none',color: item.success.findIndex(item => dateToInt(item) === dateToInt(date)) 
-                                    !== -1 ? 'darkgray' : globalFont,fontSize:16}}>
-                                    {item.content}
-                                </Text>}
-                            </View>
-                            { dateToInt(date) >= dateToInt(new Date()) && <View style={styles.buttonBox}>
-                                <Pressable
-                                    onPress={() => onUpModal(item.id,item.term,item.alarm,item.end,
-                                        item.alarm ? new Date(item.alarmDate).getHours() : new Date().getHours(),
-                                        item.alarm ? new Date(item.alarmDate).getMinutes() : new Date().getMinutes())}>
-                                    <Image source={ require(  '../../assets/image/setting.png') } 
-                                    style={{width:30,height:30,marginHorizontal:3}}/>
-                                </Pressable>
-                            </View>}
-                        </View>)}
-                    </View>
-                    <TouchableWithoutFeedback onPress={() => onOpenIndex(-1)} disabled={ openIdx === -1 || aning }>
-                        <View>
-                            {todoList.filter(todo => dateToInt(todo.date) === dateToInt(date)).length > 0 && <Text style={[styles.h2,{color:globalFont,marginTop:10}]}>목표</Text>}
-                            {todoList.filter(todo => dateToInt(todo.date) === dateToInt(date)).map((item,index) => 
-                                <View key={`${item}_${index}`}
-                                    style={styles.goalItem}>
-                                    <Pressable onPress={ () => onCheck(item.id) }>
-                                        <Image source={ item.success ? require(  '../../assets/image/check.png') : 
-                                            require(  '../../assets/image/check_null.png')} 
+                            (moveMode !== 'routine' || index !== moveIdx) &&
+                            <View key={`${item}_${index}`} style={{flexDirection:'column'}}>
+                                <View style={[styles.rouItem,{borderBottomWidth : moveMode === 'routine' ? 0 : 1}]}>
+                                    <Pressable onPress={ () => onRouCheck(item.id) }>
+                                        <Image source={ item.success.findIndex(item => dateToInt(item) === dateToInt(date)) !== -1 ? 
+                                            require(  '../../assets/image/check.png') : require(  '../../assets/image/check_null.png')} 
                                             style={styles.checkImg}/>
                                     </Pressable>
                                     <View style={styles.goalContent}>
-                                        {item.date > new Date(new Date().setHours(0, 0, 0, 0)) && item.alarm && <View style={{flexDirection:'row'}}><Text style={styles.alTxt}>
-                                            {item.alarmDate.getHours().toString().padStart(2, '0')} : {item.alarmDate.getMinutes().toString().padStart(2, '0')}
-                                        </Text></View>}
-                                        { !item.success ? 
-                                        <TextInput 
+                                        <View style={{flexDirection:'row',gap: 8}}>
+                                            { item.alarm &&<Text style={styles.alTxt}>
+                                                {item.alarmDate.getHours().toString().padStart(2, '0')} : {item.alarmDate.getMinutes().toString().padStart(2, '0')}
+                                            </Text>}
+                                            <Text style={[styles.alTxt,{backgroundColor:'#2E8DFF'}]}>START D+{ -(dateToInt(item.startDate) - dateToInt(date))/86400000 }</Text>
+                                            { item.end && 
+                                                <Text style={[styles.alTxt,{backgroundColor:'tomato'}]}>END D-{ (dateToInt(item.endDate) - dateToInt(date))/86400000 }</Text>
+                                            }
+                                        </View>
+                                        { dateToInt(date) >= dateToInt(new Date()) ?
+                                        <TextInput
+                                            ref={inputRef}
                                             multiline
+                                            onPressIn={() => !upRouKey && onMoveMode(item.id,index,'routine')}
+                                            onPressOut={() => clearTimeout(pressTimeout)}
+                                            editable={moveMode === 'none'}
                                             onFocus={() => {
                                                 requestAnimationFrame(() => {
-                                                    setUpTodoId(item.id)
-                                                    setUpTodoKey(true)
-                                                    setUpTodoContent(item.content)
+                                                    setUpRouId(item.id)
+                                                    setUpRouKey(true)
+                                                    setUpRouContent(item.content)
                                                 })
                                             }}
                                             onBlur={() => {
-                                                setUpTodoKey(false)
+                                                setUpRouKey(false)
                                             }}
-                                            onChangeText={(text) => {setUpTodoContent(text)}}
-                                            style={{color: item.success ? 'darkgray' : globalFont,fontSize:16,padding:0}}>
+                                            onChangeText={(text) => {setUpRouContent(text)}}
+                                            style={{textDecorationLine:  item.success.findIndex(item => dateToInt(item) === dateToInt(date)) 
+                                            !== -1 ? 'line-through' : 'none',color: item.success.findIndex(item => dateToInt(item) === dateToInt(date)) 
+                                            !== -1 ? 'darkgray' : globalFont,fontSize:16, padding:0}}
+                                        >
+                                        {item.content}
+                                        </TextInput> :
+                                        <Text style={{textDecorationLine:  item.success.findIndex(item => dateToInt(item) === dateToInt(date)) 
+                                            !== -1 ? 'line-through' : 'none',color: item.success.findIndex(item => dateToInt(item) === dateToInt(date)) 
+                                            !== -1 ? 'darkgray' : globalFont,fontSize:16}}>
                                             {item.content}
-                                        </TextInput> : 
-                                        <Text style={{textDecorationLine: 'line-through', color: 'darkgray' ,fontSize:16}}>
-                                            {item.content}
-                                        </Text>
-                                        }
+                                        </Text>}
                                     </View>
+                                    { dateToInt(date) >= dateToInt(new Date()) && 
                                     <View style={styles.buttonBox}>
                                         <Pressable
-                                            onPress={() => setModalConfirm({
-                                                active : true,
-                                                type : 'todo',
-                                                id : item.id,
-                                                title : '목표 삭제',
-                                                message : '목표를 삭제하시겠습니까?',
-                                                subMessage : '※삭제된 목표는 복구할 수 없습니다.'
-                                            })}>
-                                            <Image source={ require(  '../../assets/image/delete-black.png') } 
+                                            onPress={() => {
+                                                cancelMoveMode()
+                                                onUpModal(item.id,item.term,item.alarm,item.end,
+                                                item.alarm ? new Date(item.alarmDate).getHours() : new Date().getHours(),
+                                                item.alarm ? new Date(item.alarmDate).getMinutes() : new Date().getMinutes())}}>
+                                            <Image source={ require(  '../../assets/image/setting.png') } 
                                             style={{width:30,height:30,marginHorizontal:3}}/>
                                         </Pressable>
-                                        <Pressable 
-                                            disabled={index === openIdx}
-                                            onPress={() => openIdx === -1 ? setOpenIdx(index) : onOpenIndex(index)}>
-                                            {!item.success ? <Animated.View
-                                                style={[styles.botButBox,
-                                                {width: index === openIdx ? aniIdx.interpolate({ inputRange: [0, 1], outputRange: [37, 101]  }) : 37,
-                                                marginLeft: index === openIdx ? aniIdx.interpolate({ inputRange: [0, 1], outputRange: [0, -62]  }) : 0,
-                                                backgroundColor: theme === "white" ? "white" : "#333333"}]}>
-                                                <Pressable
-                                                    onPress={() => item.alarm ? onCancelAlarm(item.id) : onAlarmModal(item.id) }
-                                                    disabled={index !== openIdx || item.date < new Date(new Date().setHours(0, 0, 0, 0))}>
-                                                    <Image source={ item.date < new Date(new Date().setHours(0, 0, 0, 0)) ? require(  '../../assets/image/clock.png') : 
-                                                        item.alarm ? require(  '../../assets/image/clock_on.png') : require(  '../../assets/image/clock.png') } 
-                                                    style={[styles.rightImg,{opacity: item.date < new Date(new Date().setHours(0, 0, 0, 0)) ? 0.3 : 1 }]}/>
-                                                </Pressable>
-                                                <Pressable
-                                                    onPress={() => onRoutineModal(item.id)}
-                                                    disabled={index !== openIdx}>
-                                                    <Image source={ require(  '../../assets/image/upgrade.png') } 
-                                                    style={styles.rightImg}/>
-                                                </Pressable>
-                                                <Pressable 
-                                                    onPress={() => {
-                                                        onSetLater(true)
-                                                        onSetLatId(item.id)
-                                                    }}
-                                                    disabled={index !== openIdx}>
-                                                    <Image source={ require(  '../../assets/image/later.png') } 
-                                                    style={styles.rightImg}/>
-                                                </Pressable>
-                                            </Animated.View> : <View style={{height:35}}/>}
+                                    </View>}
+                                </View>
+                                {moveMode === 'routine' && index !== moveIdx &&
+                                    <Pressable
+                                        onPress={() => moveRou(item.id)}
+                                    >
+                                        <Animated.View
+                                            style={[mvAni,{opacity:aniMv,backgroundColor:theme === "white" ? 'whitesmoke' : '#333333',flexDirection:'row',alignItems:'center',overflow:'hidden'}]}
+                                        >
+                                            <Animated.Image 
+                                                source={require('../../assets/image/arrow-black.png')} 
+                                                style={[mvArAni,{width:20,height:20,transform:[{rotate : '90deg'}]}]}/>
+                                        </Animated.View>
+                                    </Pressable>
+                                }
+                            </View>)}
+                        </View>
+                        <View>
+                            {todoList.filter(todo => dateToInt(todo.date) === dateToInt(date)).length > 0 && <Text style={[styles.h2,{color:globalFont,marginTop:
+                            routineList.filter(rou => dateToInt(new Date(rou.startDate)) <= dateToInt(date) && 
+                            (rou.end ? dateToInt(rou.endDate) > dateToInt(date) : true) && rou.term[date.getDay()]).length > 0 ? 15 : 0}]}>목표</Text>}
+                            {moveMode === 'todo' && todoList.filter(todo => dateToInt(todo.date) === dateToInt(date)).length > 0 &&
+                                <Pressable
+                                    onPress={() => moveTodo(-1)}
+                                >
+                                    <Animated.View
+                                        style={[mvAni,{opacity:aniMv,marginTop:7,backgroundColor:theme === "white" ? 'whitesmoke' : '#333333',flexDirection:'row',alignItems:'center',overflow:'hidden'}]}
+                                    >
+                                        <Animated.Image 
+                                                source={require('../../assets/image/arrow-black.png')} 
+                                                style={[mvArAni,{width:20,height:20,transform:[{rotate : '90deg'}]}]}/>
+                                    </Animated.View>
+                                </Pressable>
+                            }
+                            {todoList.filter(todo => dateToInt(todo.date) === dateToInt(date)).map((item,index) => 
+                                <View key={`${item}_${index}`}>
+                                    {(moveMode !== 'todo' || index !== moveIdx) && <View style={[styles.goalItem,{borderBottomWidth : moveMode === 'todo' ? 0 : 1}]}>      
+                                        <Pressable onPress={ () => onCheck(item.id) }>
+                                            <Image source={ item.success ? require(  '../../assets/image/check.png') : 
+                                                require(  '../../assets/image/check_null.png')} 
+                                                style={styles.checkImg}/>
                                         </Pressable>
-                                    </View>
+                                        <View style={styles.goalContent}>
+                                            {item.date > new Date(new Date().setHours(0, 0, 0, 0)) && item.alarm && <View style={{flexDirection:'row'}}><Text style={styles.alTxt}>
+                                                {item.alarmDate.getHours().toString().padStart(2, '0')} : {item.alarmDate.getMinutes().toString().padStart(2, '0')}
+                                            </Text></View>}
+                                            { !item.success ? 
+                                            <TextInput 
+                                                multiline
+                                                onPressIn={() => !upTodoKey && onMoveMode(item.id,index,'todo')}
+                                                onPressOut={() => clearTimeout(pressTimeout)}
+                                                editable={moveMode === 'none'}
+                                                ref={inputRef}
+                                                onFocus={() => {
+                                                    requestAnimationFrame(() => {
+                                                        setUpTodoId(item.id)
+                                                        setUpTodoKey(true)
+                                                        setUpTodoContent(item.content)
+                                                    })
+                                                }}
+                                                onBlur={() => {
+                                                    setUpTodoKey(false)
+                                                }}
+                                                onChangeText={(text) => {setUpTodoContent(text)}}
+                                                style={{color: item.success ? 'darkgray' : globalFont,fontSize:16,padding:0}}>
+                                                {item.content}
+                                            </TextInput> : 
+                                            <Pressable
+                                                onPressIn={() => !upTodoKey && onMoveMode(item.id,index,'todo')}
+                                                onPressOut={() => clearTimeout(pressTimeout)}
+                                            >
+                                                <Text
+                                                    style={{textDecorationLine: 'line-through', color: 'darkgray' ,fontSize:16}}>
+                                                    {item.content}
+                                                </Text>
+                                            </Pressable>
+                                            }
+                                        </View>
+                                        <View style={styles.buttonBox}>
+                                            <Pressable
+                                                onPress={() => {
+                                                    cancelMoveMode()
+                                                    setModalConfirm({
+                                                        active : true,
+                                                        type : 'todo',
+                                                        id : item.id,
+                                                        title : '목표 삭제',
+                                                        message : '목표를 삭제하시겠습니까?',
+                                                        subMessage : '※삭제된 목표는 복구할 수 없습니다.'
+                                                    })}}>
+                                                <Image source={ require(  '../../assets/image/delete-black.png') } 
+                                                style={{width:30,height:30,marginHorizontal:3}}/>
+                                            </Pressable>
+                                            <Pressable 
+                                                disabled={index === openIdx}
+                                                onPress={() => openIdx === -1 ? setOpenIdx(index) : onOpenIndex(index)}>
+                                                {!item.success ? <Animated.View
+                                                    style={[styles.botButBox,
+                                                    {width: index === openIdx ? aniIdx.interpolate({ inputRange: [0, 1], outputRange: [37, 101]  }) : 37,
+                                                    marginLeft: index === openIdx ? aniIdx.interpolate({ inputRange: [0, 1], outputRange: [0, -62]  }) : 0,
+                                                    backgroundColor: theme === "white" ? "white" : "#363636"}]}>
+                                                    <Pressable
+                                                        onPress={() => item.alarm ? onCancelAlarm(item.id) : onAlarmModal(item.id) }
+                                                        disabled={index !== openIdx || item.date < new Date(new Date().setHours(0, 0, 0, 0))}>
+                                                        <Image source={ item.date < new Date(new Date().setHours(0, 0, 0, 0)) ? require(  '../../assets/image/clock.png') : 
+                                                            item.alarm ? require(  '../../assets/image/clock_on.png') : require(  '../../assets/image/clock.png') } 
+                                                        style={[styles.rightImg,{opacity: item.date < new Date(new Date().setHours(0, 0, 0, 0)) ? 0.3 : 1 }]}/>
+                                                    </Pressable>
+                                                    <Pressable
+                                                        onPress={() => onRoutineModal(item.id)}
+                                                        disabled={index !== openIdx}>
+                                                        <Image source={ require(  '../../assets/image/upgrade.png') } 
+                                                        style={styles.rightImg}/>
+                                                    </Pressable>
+                                                    <Pressable 
+                                                        onPress={() => {
+                                                            onSetLater(true)
+                                                            onSetLatId(item.id)
+                                                            if(fold && open) {
+                                                                setOpen(false)
+                                                                Animated.timing(aniWek, {
+                                                                    toValue: 1,
+                                                                    duration: 500,
+                                                                    useNativeDriver: false,
+                                                                    easing: Easing.out(Easing.ease)
+                                                                }).start();
+                                                            }
+                                                        }}
+                                                        disabled={index !== openIdx}>
+                                                        <Image source={ require(  '../../assets/image/later.png') } 
+                                                        style={styles.rightImg}/>
+                                                    </Pressable>
+                                                </Animated.View> : <View style={{height:35}}/>}
+                                            </Pressable>
+                                        </View>
+                                    </View>}
+                                    {moveMode === 'todo' && index !== moveIdx &&
+                                        <Pressable
+                                            onPress={() => moveTodo(item.id)}
+                                        >
+                                            <Animated.View
+                                                style={[mvAni,{opacity:aniMv,marginTop:7,backgroundColor:theme === "white" ? 'whitesmoke' : '#333333',flexDirection:'row',alignItems:'center',overflow:'hidden'}]}
+                                            >
+                                                <Animated.Image 
+                                                    source={require('../../assets/image/arrow-black.png')} 
+                                                    style={[mvArAni,{width:20,height:20,transform:[{rotate : '90deg'}]}]}/>
+                                            </Animated.View>
+                                        </Pressable>
+                                    }
                                 </View>
                             )}
                         </View>
-                    </TouchableWithoutFeedback>
-                    { !upTodoKey && !upRouKey && <View style={{paddingBottom:85}}/> }
+                    
+                    <View style={{paddingBottom: (!upTodoKey && !upRouKey && !keys) ? 85 : 10}}/>
                 </Animated.ScrollView>
             </View>}
-            {!later && !upTodoKey && !upRouKey && <View style={[styles.contentBox,{opacity: keys ? 1 : 0.8, backgroundColor : theme === "white" ? "white" : "#333333"}]}>
-                <TextInput value={todoDTO.content} 
-                    multiline
-                    style={[styles.contentInput,{color:globalFont}]}
-                    placeholder='목표 입력'
-                    placeholderTextColor="gray" 
-                    onSubmitEditing={ () => todoDTO.content.length > 0 && onDTO() }
-                    onChangeText={(text) => 
-                        setTodoDTO(item => {
-                        return {...item,content : text} 
-                })}/>
-                <Pressable onPress={ () => todoDTO.content.length > 0 && onDTO() }>
-                    <Image source={require('../../assets/image/schedule_add.png')} style={[styles.scheduleImg,
-                        {opacity: todoDTO.content.length > 0 ? 1 : 0.3 }]}/>
-                </Pressable>
+            {!later && !upTodoKey && !upRouKey && moveMode === 'none' &&
+            <View style={{flex:0, backgroundColor: keys ? globalBack : '#00000000',position:keys ? 'relative' : 'absolute',bottom:0}}>
+                <View style={[styles.contentBox,{opacity: keys ? 1 : 0.8, backgroundColor : theme === "white" ? "white" : "#333333"}]}>
+                    <TextInput 
+                        ref={inputRef}
+                        value={todoDTO.content} 
+                        multiline
+                        style={[styles.contentInput,{color:globalFont}]}
+                        placeholder='목표 입력'
+                        placeholderTextColor="gray"
+                        onChangeText={(text) => 
+                            setTodoDTO(item => {
+                            return {...item,content : text} 
+                    })}/>
+                    <Pressable onPress={ () => todoDTO.content.length > 0 && onDTO() }>
+                        <Image source={require('../../assets/image/schedule_add.png')} style={[styles.scheduleImg,
+                            {opacity: todoDTO.content.length > 0 ? 1 : 0.3 }]}/>
+                    </Pressable>
+                </View>
             </View>}
+            {moveMode !== 'none' && 
+            <Pressable
+                onPress={cancelMoveMode}
+                style={[styles.contentBox,{position:'absolute',opacity:0.8, backgroundColor : theme === "white" ? "white" : "#333333"}]}
+            >  
+                <Animated.Text numberOfLines={1} ellipsizeMode="tail" style={[styles.moveContent,{color:globalFont,opacity:aniMv}]}>
+                    { moveMode === 'todo' ? todoList.find(item => item.id === moveId)?.content : moveMode === 'routine' && routineList.find(item => item.id === moveId)?.content }
+                </Animated.Text> 
+            </Pressable>}
             <Modal
                 animationType="fade"
                 transparent={true}
@@ -1401,6 +1640,7 @@ const Main: React.FC<Props> = ({globalFont,keys,todoList,routineList,routineId,l
                 </View>
             </Modal>
         </View>
+        </TouchableWithoutFeedback>
     );
 };
 
@@ -1439,7 +1679,6 @@ const styles = StyleSheet.create({
         width: '95%',
         backgroundColor:'white',
         borderRadius:5,
-        position: 'absolute',
         bottom: 10,
         marginHorizontal: '2.5%',
         padding: 10,
@@ -1447,7 +1686,13 @@ const styles = StyleSheet.create({
     contentInput : {
         fontSize: 16,
         width: windowWidth * 0.95 - 52,
-        maxHeight: 205
+        maxHeight: 118
+    },
+    moveContent : {
+        fontSize: 16,
+        marginHorizontal: 5,
+        marginVertical: 13,
+        
     },
     scheduleImg : {
         width:32,
@@ -1461,7 +1706,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: 5,
         paddingTop: 8,
         paddingBottom: 14,
-        marginBottom: 5
+        marginTop: 5
     },
     rouItem : {
         borderBottomWidth:1,

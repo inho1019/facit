@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Main from "./main/Main";
-import { Button, Dimensions, Image, Keyboard, Modal, PermissionsAndroid, Platform, Pressable, ScrollView, StyleSheet, Text, TouchableWithoutFeedback, View } from "react-native";
+import { NativeModules, Dimensions, Image, Keyboard, Modal, PermissionsAndroid, Platform, Pressable, ScrollView, StyleSheet, Text, TouchableWithoutFeedback, View } from "react-native";
 import Attain from "./main/Attain";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import PushNotification from "react-native-push-notification";
 import Setting from "./main/Setting";
+const SharedStorage = NativeModules.SharedStorage;
+
 
 export type AttainType = "date" | "week" | "month" | "year" | "custom"
 
@@ -61,6 +63,7 @@ PushNotification.createChannel(
 
 const Index: React.FC = () => {
 
+
     const scrollRef = useRef<ScrollView>(null)
     
     const windowWidth = Dimensions.get('window').width;
@@ -90,6 +93,7 @@ const Index: React.FC = () => {
     },[theme])
 
     useEffect(() => {
+        setTimeout(() => setLoading(false),1000)
         const getData = async () => {
             try {
                 const themeData = await AsyncStorage.getItem("theme");
@@ -137,6 +141,8 @@ const Index: React.FC = () => {
     const [todoId,setTodoId] = useState<number>(3)
     const [routineId,setRoutineId] = useState<number>(3)
 
+    const [loading,setLoading] = useState<boolean>(true)
+
     const [later,setLater] = useState<boolean>(false)
     const [latId,setLatId] = useState<number>(-1)
 
@@ -166,35 +172,29 @@ const Index: React.FC = () => {
 
     useEffect(() => {
         if (Platform.OS === 'android') {
-            const requestAlarmPermission = async () => {
-                try {
-                    const granted = await PermissionsAndroid.request(
-                        PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS,
-                        {
-                            title: 'Alarm Permission',
-                            message: 'App needs permission for alarm access',
-                buttonPositive: 'OK',
-                },
-            )
-            if(granted === PermissionsAndroid.RESULTS.GRANTED){
-                console.log('success');
-            }else {
-                console.log('Please alarm permission');
+            const permisson = async () => {
+                let permissions = [
+                    PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS,
+                ]  
+                PermissionsAndroid.requestMultiple(permissions)
+                .then((status) => {
+                    console.log(status)
+                    console.log('permission granted');
+                })
+                .catch((err) => {
+                    console.log(err);
+                });
             }
-        } catch (err) {
-            console.log('Alarm permission err');
-            console.warn(err);
-        }
-        };
-            requestAlarmPermission();
+            permisson();
         }
 
         PushNotification.configure({
-        
             onNotification: function (notification) {
                 if(parseInt(notification.id) > 0) {
                     setTodoModal(true)
                     setTodoModalId(parseInt(notification.id))
+                    scrollRef.current?.scrollTo({x: 0, animated: true})
+                    setPage(0)
                 }
                 if(parseInt(notification.id) === 0) {
                     requestAnimationFrame(() => {
@@ -209,6 +209,8 @@ const Index: React.FC = () => {
                     setRoutineDate(new Date())
                     setRoutineModal(true)
                     setRoutineModalId(-parseInt(notification.id))
+                    scrollRef.current?.scrollTo({x: 0, animated: true})
+                    setPage(0)
                 }
             },
 
@@ -228,6 +230,7 @@ const Index: React.FC = () => {
             title: "매일 알림",
             message: "어제의 목표 달성도를 확인해보세요!",
             date: newDate,
+            smallIcon: "ic_launcher_square_adaptive_fore",
             id: 0
         });
 
@@ -279,6 +282,7 @@ const Index: React.FC = () => {
         const setData = async () => {
             try {
                 AsyncStorage.setItem("todoList", JSON.stringify(todoList))
+                SharedStorage.set(JSON.stringify(todoList))
             } catch (error) {
                 console.error('저장 중 오류 발생', error);
             }
@@ -316,6 +320,7 @@ const Index: React.FC = () => {
     
     useEffect(() => {
         const getData = async () => {
+
             try {
                 const toId = await AsyncStorage.getItem("todoId");
                 const toList = await AsyncStorage.getItem("todoList");
@@ -364,7 +369,29 @@ const Index: React.FC = () => {
     useEffect(() => {
         alarmSet();
     },[routineModal,todoModal,routineList])
+
+    useEffect(() => {
+        const date = new Date()
+        SharedStorage.set(JSON.stringify({
+            date: `${(date.getMonth()+1).toString().padStart(2, '0')}월 ${(date.getDate()).toString().padStart(2, '0')}일 ${date.getDay() === 0 ? '일' : date.getDay() === 1 ? '월' : 
+                date.getDay() === 2 ? '화' : date.getDay() === 3 ? '수' : date.getDay() === 4 ? '목' : date.getDay() === 5 ? '금' : '토'}요일`,
+            data:  [...routineList.filter(rou => dateToInt(new Date(rou.startDate)) <= dateToInt(date) && (rou.end ? dateToInt(rou.endDate) > dateToInt(date) : true) && rou.term[date.getDay()])?.map( item => {
+                return {content : item.content, success : item.success.findIndex(fd => dateToInt(fd) === dateToInt(date)) !== -1, id: item.id}
+            }),
+            ...todoList.filter(item => dateToInt(item.date) === dateToInt(date)).map( item => {
+                return {content : item.content, success : item.success,  id: item.id }
+            })]
+            // todo: todoList.find(item => dateToInt(item.date) === dateToInt(date) && item.success === false) ? 
+            //     todoList.filter(item => dateToInt(item.date) === dateToInt(date) && item.success === false).map( item => '\u25A1  ' + item.content).join('\n'): 
+            //     "미완료 목표가 없습니다.",
+            // routine: routineList.find(rou => dateToInt(new Date(rou.startDate)) <= dateToInt(date) && (rou.end ? dateToInt(rou.endDate) > dateToInt(date) : true) && 
+            //         rou.term[date.getDay()]) ? routineList.filter(rou => dateToInt(new Date(rou.startDate)) <= dateToInt(date) && 
+            //         (rou.end ? dateToInt(rou.endDate) > dateToInt(date) : true) && rou.term[date.getDay()])?.map( item => '\u25A1  ' + item.content).join('\n') : 
+            //     "미완료 루틴이 없습니다."
+        }))
+    },[todoList,routineList,reData])
     
+    useEffect(() => Keyboard.dismiss(),[page])
     //////////////////////////////////////////////////
 
     const onTodoAlarm = (alarmId : number,newDate : Date) => {
@@ -378,7 +405,8 @@ const Index: React.FC = () => {
             message: message,
             date: newDate,
             vibration: 3000,
-            id: alarmId
+            id: alarmId,
+            smallIcon: "ic_launcher_square_adaptive_fore",
         });
 
         setTodoList(list => list.map(item => {
@@ -477,6 +505,16 @@ const Index: React.FC = () => {
         })
     }
 
+    const onMoveTodo = (frontid : number,moveid : number,dto : TodoDTO) => {
+        const changeList : TodoDTO[] = todoList.filter(item => item.id !== moveid)
+        if(frontid === -1) {
+            changeList.unshift(dto)
+        } else {
+            changeList.splice(changeList.findIndex(fd => fd.id === frontid)+1,0,dto)
+        }
+        setTodoList(changeList)
+    }
+
     //////////////////////////////////////////////////
 
     const onRoutineCheck = (id : number,date : Date) => {
@@ -534,6 +572,37 @@ const Index: React.FC = () => {
           });
     }
 
+    const onTodo = (list : TodoDTO[]) => {
+        setTodoList(list)
+        setReData(item => !item)
+    }
+
+    const onRoutine = (list : RoutineDTO[]) => {
+        setRoutineList(list)
+        setReData(item => !item)
+    }
+
+    const onTodoId = (id : number) => {
+        setTodoId(id)
+        setReData(item => !item)
+    }
+
+    const onRoutineId = (id : number) => {
+        setRoutineId(id)
+        setReData(item => !item)
+    }
+
+    const onMoveRoutine = (frontid : number,moveid : number,dto : RoutineDTO) => {
+        const changeList : RoutineDTO[] = routineList.filter(item => item.id !== moveid)
+        if(frontid === -1) {
+            changeList.unshift(dto)
+        } else {
+            changeList.splice(changeList.findIndex(fd => fd.id === frontid)+1,0,dto)
+        }
+        setRoutineList(changeList)
+    }
+
+
     /////////////////////////////////////////////////
 
     const onMove = (dt : Date , latId : number) => {
@@ -578,6 +647,7 @@ const Index: React.FC = () => {
             if(item.alarm && 
                 item.term[new Date().getDay()] && 
                 new Date() < ifDate &&
+                item.success.findIndex(fd => dateToInt(fd) === dateToInt(new Date())) === -1 &&
                 !(item.end && dateToInt(item.endDate) >= dateToInt(new Date()))
             ) {     
                 PushNotification.localNotificationSchedule({
@@ -587,7 +657,8 @@ const Index: React.FC = () => {
                     message: item.content || "루틴",
                     date: ifDate,
                     vibration: 3000,
-                    id: -item.id
+                    id: -item.id,
+                    smallIcon: "ic_launcher_square_adaptive_fore",
                 });
             } else {
                 PushNotification.cancelLocalNotification((-item.id).toString());
@@ -604,6 +675,20 @@ const Index: React.FC = () => {
         setTodoList(setList);
     },[routineList,todoList])
 
+    const onLoading = (bool : boolean) => {
+        setLoading(bool)
+        if(!bool) {
+            scrollRef.current?.scrollTo({x: 0, animated: false})
+            setPage(0)
+        }
+    }
+
+    if(loading) {
+        return <View style={{backgroundColor:globalBack,justifyContent:'center',alignItems:'center',flex:1}}>
+            <Image source={ require(  '../assets/image/facit.png') } style={{width:200,height:200}}/>
+        </View>
+    }
+
     return (
         <TouchableWithoutFeedback onPress={() => Keyboard.dismiss()} disabled={!key}>
             <View style={{flex:1,backgroundColor:globalBack}}>
@@ -619,7 +704,7 @@ const Index: React.FC = () => {
                     decelerationRate="fast"
                 >
                     <Main globalFont={globalFont} keys={key} routineId={routineId} later={later} latId={latId}
-                        onSetLatId={onSetLatId} onSetLater={onSetLater} onAttain={onAttain}
+                        onSetLatId={onSetLatId} onSetLater={onSetLater} onAttain={onAttain} onMoveTodo={onMoveTodo} onMoveRoutine={onMoveRoutine}
                         onTodoAlarm={onTodoAlarm} onCancelAlarm={onCancelAlarm} onTodoDTO={onTodoDTO} onTodoCheck={onTodoCheck}
                         onRoutineCheck={onRoutineCheck} onMove={onMove} onTodoDelete={onTodoDelete} onRoutineDTO={onRoutineDTO}
                         onRoutineEnd={onRoutineEnd} onRoutineRe={onRoutineRe} onRoutineUpdate={onRoutineUpdate} 
@@ -629,7 +714,8 @@ const Index: React.FC = () => {
                         type={attainType} startDate={startDate} endDate={endDate} onStartDate={onStartDate} onEndDate={onEndDate}
                         onDate={onDate} onAttainType={onAttainType} globalBack={globalBack} theme={theme}/>
                     <Setting routineList={routineList} todoList={todoList} globalFont={globalFont} globalBack={globalBack} theme={theme}
-                        onTheme={onTheme}/>
+                        todoId={todoId} routineId={routineId} onTodoId={onTodoId} onRoutineId={onRoutineId}
+                        onTheme={onTheme} onTodo={onTodo} onRoutine={onRoutine} onLoading={onLoading}/>
                 </ScrollView>
                 <Modal
                     animationType="fade"
