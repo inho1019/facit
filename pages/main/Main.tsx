@@ -876,6 +876,15 @@ const Main: React.FC<Props> = ({globalFont,keys,todoList,routineList,routineId,l
         }
     },[openIdx])
 
+    useEffect(() => {
+        aniMain.setValue(0)
+        setCalendarVisible(false)
+        setDate(new Date())
+        requestAnimationFrame(() => {
+            setCalendarVisible(true)
+        })
+    },[theme])
+
     return (
         <TouchableWithoutFeedback onPress={() => onOpenIndex(-1)} disabled={ openIdx === -1 || aning }>
         <View style={{flex:1}}>
@@ -1008,7 +1017,7 @@ const Main: React.FC<Props> = ({globalFont,keys,todoList,routineList,routineId,l
                 <Pressable
                     onPress={() => onSetLater(false)}
                     style={{flex:1,justifyContent:'center',alignItems:'center'}}>
-                    <Text style={{color:globalFont,fontSize: 17}}>목표 이동</Text>
+                    <Text style={{color:globalFont,fontSize: 17}}>계획 이동</Text>
                     <Text style={{color:globalFont,fontSize: 17}}>이동할 날짜를 선택하세요</Text>
                 </Pressable>
             </View>}
@@ -1022,6 +1031,9 @@ const Main: React.FC<Props> = ({globalFont,keys,todoList,routineList,routineId,l
                     onContentSizeChange={(_, height) => setContentHeight(height)}
                     showsVerticalScrollIndicator={false}>
                     <View>
+                        {routineList.filter(rou => dateToInt(new Date(rou.startDate)) <= dateToInt(date) && 
+                            (rou.end ? dateToInt(rou.endDate) > dateToInt(date) : true) && rou.term[date.getDay()]).length === 0 && 
+                            todoList.filter(todo => dateToInt(todo.date) === dateToInt(date)).length === 0 && <Text style={{textAlign:'center',fontSize:15,marginTop:10,color:'darkgray'}}>계획을 등록해주세요</Text> }
                         {routineList.filter(rou => dateToInt(new Date(rou.startDate)) <= dateToInt(date) && 
                             (rou.end ? dateToInt(rou.endDate) > dateToInt(date) : true) && rou.term[date.getDay()]).length > 0 && 
                             <Text style={[styles.h2,{color:globalFont}]}>루틴</Text>}
@@ -1121,7 +1133,7 @@ const Main: React.FC<Props> = ({globalFont,keys,todoList,routineList,routineId,l
                         <View>
                             {todoList.filter(todo => dateToInt(todo.date) === dateToInt(date)).length > 0 && <Text style={[styles.h2,{color:globalFont,marginTop:
                             routineList.filter(rou => dateToInt(new Date(rou.startDate)) <= dateToInt(date) && 
-                            (rou.end ? dateToInt(rou.endDate) > dateToInt(date) : true) && rou.term[date.getDay()]).length > 0 ? 15 : 0}]}>목표</Text>}
+                            (rou.end ? dateToInt(rou.endDate) > dateToInt(date) : true) && rou.term[date.getDay()]).length > 0 ? 15 : 0}]}>계획</Text>}
                             {moveMode === 'todo' && todoList.filter(todo => dateToInt(todo.date) === dateToInt(date)).length > 0 &&
                                 <Pressable
                                     onPress={() => moveTodo(-1)}
@@ -1187,9 +1199,9 @@ const Main: React.FC<Props> = ({globalFont,keys,todoList,routineList,routineId,l
                                                         active : true,
                                                         type : 'todo',
                                                         id : item.id,
-                                                        title : '목표 삭제',
-                                                        message : '목표를 삭제하시겠습니까?',
-                                                        subMessage : '※삭제된 목표는 복구할 수 없습니다.'
+                                                        title : '계획 삭제',
+                                                        message : '계획를 삭제하시겠습니까?',
+                                                        subMessage : '※삭제된 계획은 복구할 수 없습니다.'
                                                     })}}>
                                                 <Image source={ require(  '../../assets/image/delete-black.png') } 
                                                 style={{width:30,height:30,marginHorizontal:3}}/>
@@ -1265,7 +1277,7 @@ const Main: React.FC<Props> = ({globalFont,keys,todoList,routineList,routineId,l
                         value={todoDTO.content} 
                         multiline
                         style={[styles.contentInput,{color:globalFont}]}
-                        placeholder='목표 입력'
+                        placeholder='계획 입력'
                         placeholderTextColor="gray"
                         onChangeText={(text) => 
                             setTodoDTO(item => {

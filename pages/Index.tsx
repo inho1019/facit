@@ -36,7 +36,7 @@ export type RoutineDTO = {
 PushNotification.createChannel(
     {
         channelId: "todo", 
-        channelName: "목표 알람",
+        channelName: "계획 알람",
         importance: 4, 
         vibrate: true, 
     },
@@ -93,7 +93,39 @@ const Index: React.FC = () => {
     },[theme])
 
     useEffect(() => {
-        setTimeout(() => setLoading(false),1000)
+        setTimeout(() => {
+            setLoading(false)    
+            PushNotification.configure({
+                onNotification: function (notification) {
+                    console.log(notification)
+                    if(parseInt(notification.id) > 0) {
+                        setTodoModal(true)
+                        setTodoModalId(parseInt(notification.id))
+                        scrollRef.current?.scrollTo({x: 0, animated: true})
+                        setPage(0)
+                    }
+                    if(parseInt(notification.id) == 0) {
+                        requestAnimationFrame(() => {
+                            const newDate = new Date()
+                            newDate.setDate(newDate.getDate() - 1)
+                            scrollRef.current?.scrollTo({x: windowWidth, animated: true})
+                            setAttainDate(newDate)
+                            setPage(1)
+                        })
+                    }
+                    if(parseInt(notification.id) < 0) {
+                        setRoutineDate(new Date())
+                        setRoutineModal(true)
+                        setRoutineModalId(-parseInt(notification.id))
+                        scrollRef.current?.scrollTo({x: 0, animated: true})
+                        setPage(0)
+                    }
+                },
+
+
+                requestPermissions: Platform.OS === 'ios'
+            });
+        },1000)
         const getData = async () => {
             try {
                 const themeData = await AsyncStorage.getItem("theme");
@@ -188,36 +220,6 @@ const Index: React.FC = () => {
             permisson();
         }
 
-        PushNotification.configure({
-            onNotification: function (notification) {
-                if(parseInt(notification.id) > 0) {
-                    setTodoModal(true)
-                    setTodoModalId(parseInt(notification.id))
-                    scrollRef.current?.scrollTo({x: 0, animated: true})
-                    setPage(0)
-                }
-                if(parseInt(notification.id) === 0) {
-                    requestAnimationFrame(() => {
-                        const newDate = new Date()
-                        newDate.setDate(newDate.getDate() - 1)
-                        scrollRef.current?.scrollTo({x: windowWidth, animated: true})
-                        setAttainDate(newDate)
-                        setPage(1)
-                    })
-                }
-                if(parseInt(notification.id) < 0) {
-                    setRoutineDate(new Date())
-                    setRoutineModal(true)
-                    setRoutineModalId(-parseInt(notification.id))
-                    scrollRef.current?.scrollTo({x: 0, animated: true})
-                    setPage(0)
-                }
-            },
-
-
-            requestPermissions: Platform.OS === 'ios'
-          });
-
         const newDate = new Date()
         newDate.setDate(newDate.getDate() + 1)
         newDate.setHours(0)
@@ -228,7 +230,7 @@ const Index: React.FC = () => {
             channelId: "day",
             tag: "day",
             title: "매일 알림",
-            message: "어제의 목표 달성도를 확인해보세요!",
+            message: "어제의 계획 달성도를 확인해보세요!",
             date: newDate,
             smallIcon: "ic_launcher_square_adaptive_fore",
             id: 0
@@ -383,7 +385,7 @@ const Index: React.FC = () => {
             })]
             // todo: todoList.find(item => dateToInt(item.date) === dateToInt(date) && item.success === false) ? 
             //     todoList.filter(item => dateToInt(item.date) === dateToInt(date) && item.success === false).map( item => '\u25A1  ' + item.content).join('\n'): 
-            //     "미완료 목표가 없습니다.",
+            //     "미완료 계획가 없습니다.",
             // routine: routineList.find(rou => dateToInt(new Date(rou.startDate)) <= dateToInt(date) && (rou.end ? dateToInt(rou.endDate) > dateToInt(date) : true) && 
             //         rou.term[date.getDay()]) ? routineList.filter(rou => dateToInt(new Date(rou.startDate)) <= dateToInt(date) && 
             //         (rou.end ? dateToInt(rou.endDate) > dateToInt(date) : true) && rou.term[date.getDay()])?.map( item => '\u25A1  ' + item.content).join('\n') : 
@@ -396,12 +398,12 @@ const Index: React.FC = () => {
 
     const onTodoAlarm = (alarmId : number,newDate : Date) => {
         const alarmTodo = todoList.find(fd => fd.id === alarmId);
-        const message = alarmTodo ? alarmTodo.content : "목표";
+        const message = alarmTodo ? alarmTodo.content : "계획";
 
         PushNotification.localNotificationSchedule({
             channelId: "todo",
             tag: "todo",
-            title: newDate.getHours().toString().padStart(2, '0') + "시 " + newDate.getMinutes().toString().padStart(2, '0') + "분 목표 알림",
+            title: newDate.getHours().toString().padStart(2, '0') + "시 " + newDate.getMinutes().toString().padStart(2, '0') + "분 계획 알림",
             message: message,
             date: newDate,
             vibration: 3000,
@@ -724,7 +726,7 @@ const Index: React.FC = () => {
                 >
                     <View style={{flex:1,justifyContent:'center',alignItems:'center',backgroundColor:'#00000010'}}>
                         <View style={[styles.modal,{backgroundColor: globalBack}]}>
-                            <Text style={[styles.modalTitle,{color:globalFont}]}>목표 확인</Text>
+                            <Text style={[styles.modalTitle,{color:globalFont}]}>계획 확인</Text>
                             <Text style={{color: globalFont,fontSize:16,paddingVertical:10,paddingHorizontal:20}}>
                                 {todoList.find(fd => fd.id === todoModalId)?.content}
                             </Text>

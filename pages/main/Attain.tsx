@@ -661,7 +661,7 @@ const Attain: React.FC<Props> = ({globalFont,todoList,routineList,page,date,star
                         {
                             (fill) => 
                                 <View style={{alignItems:'center'}}>
-                                    <Text style={{fontWeight:'bold', color:globalFont}}>목표</Text>
+                                    <Text style={{fontWeight:'bold', color:globalFont}}>계획</Text>
                                     <Text style={{fontWeight:'bold', color:globalFont}}>{ todoFillList.length === 0 ? '없음' : Math.floor(fill)+'%' }</Text>
                                 </View>
                         }    
@@ -714,7 +714,7 @@ const Attain: React.FC<Props> = ({globalFont,todoList,routineList,page,date,star
                 </View>
                 <View style={{flexDirection:'row',paddingHorizontal:10,gap:10}}>
                     <View style={{flex:1,backgroundColor: theme === "white" ? 'whitesmoke' : '#222222',paddingVertical:5}}>
-                        <Text style={[styles.h4,{color:globalFont,textAlign:'center'}]}>목표</Text>
+                        <Text style={[styles.h4,{color:globalFont,textAlign:'center'}]}>계획</Text>
                     </View>
                     <View style={{flex:1,backgroundColor: theme === "white" ? 'whitesmoke' : '#222222',paddingVertical:5}}>
                         <Text style={[styles.h4,{color:globalFont,textAlign:'center'}]}>루틴</Text>
