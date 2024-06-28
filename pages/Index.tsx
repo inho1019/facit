@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Main from "./main/Main";
-import { NativeModules, Dimensions, Image, Keyboard, Modal, PermissionsAndroid, Platform, Pressable, ScrollView, StyleSheet, Text, TouchableWithoutFeedback, View } from "react-native";
+import { NativeModules, Dimensions, Image, Keyboard, Modal, PermissionsAndroid, Platform, Pressable, ScrollView, StyleSheet, Text, TouchableWithoutFeedback, View, SafeAreaView, KeyboardAvoidingView, LogBox } from "react-native";
 import Attain from "./main/Attain";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import PushNotification from "react-native-push-notification";
 import Setting from "./main/Setting";
+import PushNotificationIOS from "@react-native-community/push-notification-ios";
+import DraggableFlatList from "react-native-draggable-flatlist";
 const SharedStorage = NativeModules.SharedStorage;
 
 
@@ -120,6 +122,8 @@ const Index: React.FC = () => {
                         scrollRef.current?.scrollTo({x: 0, animated: true})
                         setPage(0)
                     }
+
+                    notification.finish(PushNotificationIOS.FetchResult.NoData);
                 },
 
 
@@ -189,6 +193,10 @@ const Index: React.FC = () => {
 
     const [page,setPage] = useState<number>(0)
 
+    const [scrollActive,setScrollActive] = useState<boolean>(true)
+
+    const onScrollActive = (bool : boolean) => { setScrollActive(bool) } 
+
     const dateToInt = (date : Date | string) => {
         const newDate = new Date(date)
         const numDate = new Date(newDate.getFullYear(),newDate.getMonth(),newDate.getDate())
@@ -203,6 +211,8 @@ const Index: React.FC = () => {
     }
 
     useEffect(() => {
+        LogBox.ignoreAllLogs()
+
         if (Platform.OS === 'android') {
             const permisson = async () => {
                 let permissions = [
@@ -284,7 +294,9 @@ const Index: React.FC = () => {
         const setData = async () => {
             try {
                 AsyncStorage.setItem("todoList", JSON.stringify(todoList))
-                SharedStorage.set(JSON.stringify(todoList))
+                if(Platform.OS === 'android') {
+                    SharedStorage.set(JSON.stringify(todoList))
+                }
             } catch (error) {
                 console.error('저장 중 오류 발생', error);
             }
@@ -374,23 +386,26 @@ const Index: React.FC = () => {
 
     useEffect(() => {
         const date = new Date()
-        SharedStorage.set(JSON.stringify({
-            date: `${(date.getMonth()+1).toString().padStart(2, '0')}월 ${(date.getDate()).toString().padStart(2, '0')}일 ${date.getDay() === 0 ? '일' : date.getDay() === 1 ? '월' : 
-                date.getDay() === 2 ? '화' : date.getDay() === 3 ? '수' : date.getDay() === 4 ? '목' : date.getDay() === 5 ? '금' : '토'}요일`,
-            data:  [...routineList.filter(rou => dateToInt(new Date(rou.startDate)) <= dateToInt(date) && (rou.end ? dateToInt(rou.endDate) > dateToInt(date) : true) && rou.term[date.getDay()])?.map( item => {
-                return {content : item.content, success : item.success.findIndex(fd => dateToInt(fd) === dateToInt(date)) !== -1, id: item.id}
-            }),
-            ...todoList.filter(item => dateToInt(item.date) === dateToInt(date)).map( item => {
-                return {content : item.content, success : item.success,  id: item.id }
-            })]
-            // todo: todoList.find(item => dateToInt(item.date) === dateToInt(date) && item.success === false) ? 
-            //     todoList.filter(item => dateToInt(item.date) === dateToInt(date) && item.success === false).map( item => '\u25A1  ' + item.content).join('\n'): 
-            //     "미완료 계획가 없습니다.",
-            // routine: routineList.find(rou => dateToInt(new Date(rou.startDate)) <= dateToInt(date) && (rou.end ? dateToInt(rou.endDate) > dateToInt(date) : true) && 
-            //         rou.term[date.getDay()]) ? routineList.filter(rou => dateToInt(new Date(rou.startDate)) <= dateToInt(date) && 
-            //         (rou.end ? dateToInt(rou.endDate) > dateToInt(date) : true) && rou.term[date.getDay()])?.map( item => '\u25A1  ' + item.content).join('\n') : 
-            //     "미완료 루틴이 없습니다."
-        }))
+        if(Platform.OS === 'android') {
+        SharedStorage.set(
+            JSON.stringify({
+                date: `${(date.getMonth()+1).toString().padStart(2, '0')}월 ${(date.getDate()).toString().padStart(2, '0')}일 ${date.getDay() === 0 ? '일' : date.getDay() === 1 ? '월' : 
+                    date.getDay() === 2 ? '화' : date.getDay() === 3 ? '수' : date.getDay() === 4 ? '목' : date.getDay() === 5 ? '금' : '토'}요일`,
+                data:  [...routineList.filter(rou => dateToInt(new Date(rou.startDate)) <= dateToInt(date) && (rou.end ? dateToInt(rou.endDate) > dateToInt(date) : true) && rou.term[date.getDay()])?.map( item => {
+                    return {content : item.content, success : item.success.findIndex(fd => dateToInt(fd) === dateToInt(date)) !== -1, id: item.id}
+                }),
+                ...todoList.filter(item => dateToInt(item.date) === dateToInt(date)).map( item => {
+                    return {content : item.content, success : item.success,  id: item.id }
+                })]
+                // todo: todoList.find(item => dateToInt(item.date) === dateToInt(date) && item.success === false) ? 
+                //     todoList.filter(item => dateToInt(item.date) === dateToInt(date) && item.success === false).map( item => '\u25A1  ' + item.content).join('\n'): 
+                //     "미완료 계획가 없습니다.",
+                // routine: routineList.find(rou => dateToInt(new Date(rou.startDate)) <= dateToInt(date) && (rou.end ? dateToInt(rou.endDate) > dateToInt(date) : true) && 
+                //         rou.term[date.getDay()]) ? routineList.filter(rou => dateToInt(new Date(rou.startDate)) <= dateToInt(date) && 
+                //         (rou.end ? dateToInt(rou.endDate) > dateToInt(date) : true) && rou.term[date.getDay()])?.map( item => '\u25A1  ' + item.content).join('\n') : 
+                //     "미완료 루틴이 없습니다."
+            }))
+        }
     },[todoList,routineList,reData])
     
     useEffect(() => Keyboard.dismiss(),[page])
@@ -432,6 +447,23 @@ const Index: React.FC = () => {
                 return item
             }
         }))
+    }
+
+    const deleteAlarm = (id : number) => {
+        PushNotification.cancelLocalNotification((id).toString());
+    }
+
+    const addAlarm = (id : number, date : Date, content : string) => {
+        PushNotification.localNotificationSchedule({
+            channelId: "todo",
+            tag: "todo",
+            title: date.getHours().toString().padStart(2, '0') + "시 " + date.getMinutes().toString().padStart(2, '0') + "분 계획 알림",
+            message: content,
+            date: date,
+            vibration: 3000,
+            id: id,
+            smallIcon: "ic_launcher_square_adaptive_fore",
+        });
     }
     //////////////////////////////////////////////////
 
@@ -507,14 +539,8 @@ const Index: React.FC = () => {
         })
     }
 
-    const onMoveTodo = (frontid : number,moveid : number,dto : TodoDTO) => {
-        const changeList : TodoDTO[] = todoList.filter(item => item.id !== moveid)
-        if(frontid === -1) {
-            changeList.unshift(dto)
-        } else {
-            changeList.splice(changeList.findIndex(fd => fd.id === frontid)+1,0,dto)
-        }
-        setTodoList(changeList)
+    const onMoveTodo = (date: Date, list: TodoDTO[] ) => {
+        setTodoList([...todoList.filter(todo => dateToInt(todo.date) !== dateToInt(date)),...list])
     }
 
     //////////////////////////////////////////////////
@@ -594,14 +620,9 @@ const Index: React.FC = () => {
         setReData(item => !item)
     }
 
-    const onMoveRoutine = (frontid : number,moveid : number,dto : RoutineDTO) => {
-        const changeList : RoutineDTO[] = routineList.filter(item => item.id !== moveid)
-        if(frontid === -1) {
-            changeList.unshift(dto)
-        } else {
-            changeList.splice(changeList.findIndex(fd => fd.id === frontid)+1,0,dto)
-        }
-        setRoutineList(changeList)
+    const onMoveRoutine = (date: Date, list : RoutineDTO[] ) => {
+        setRoutineList([...routineList.filter(rou => !(dateToInt(new Date(rou.startDate)) <= dateToInt(date) && 
+            (rou.end ? dateToInt(rou.endDate) > dateToInt(date) : true) && rou.term[date.getDay()])),...list])
     }
 
 
@@ -692,105 +713,108 @@ const Index: React.FC = () => {
     }
 
     return (
-        <TouchableWithoutFeedback onPress={() => Keyboard.dismiss()} disabled={!key}>
-            <View style={{flex:1,backgroundColor:globalBack}}>
-                <ScrollView
-                    ref={ scrollRef }
-                    pagingEnabled
-                    horizontal
-                    keyboardShouldPersistTaps='handled'
-                    showsHorizontalScrollIndicator={false}
-                    contentContainerStyle={{width: `300%`}}
-                    scrollEventThrottle={50}
-                    onMomentumScrollEnd={pageChange}
-                    decelerationRate="fast"
-                >
-                    <Main globalFont={globalFont} keys={key} routineId={routineId} later={later} latId={latId}
-                        onSetLatId={onSetLatId} onSetLater={onSetLater} onAttain={onAttain} onMoveTodo={onMoveTodo} onMoveRoutine={onMoveRoutine}
-                        onTodoAlarm={onTodoAlarm} onCancelAlarm={onCancelAlarm} onTodoDTO={onTodoDTO} onTodoCheck={onTodoCheck}
-                        onRoutineCheck={onRoutineCheck} onMove={onMove} onTodoDelete={onTodoDelete} onRoutineDTO={onRoutineDTO}
-                        onRoutineEnd={onRoutineEnd} onRoutineRe={onRoutineRe} onRoutineUpdate={onRoutineUpdate} 
-                        onTodoUpdateContent={onTodoUpdateContent} onRoutineUpdateContent={onRoutineUpdateContent}
-                        todoList={todoList} routineList={routineList} globalBack={globalBack} theme={theme}/>
-                    <Attain globalFont={globalFont} todoList={todoList} routineList={routineList} date={attainDate} page={page} keys={key}
-                        type={attainType} startDate={startDate} endDate={endDate} onStartDate={onStartDate} onEndDate={onEndDate}
-                        onDate={onDate} onAttainType={onAttainType} globalBack={globalBack} theme={theme}/>
-                    <Setting routineList={routineList} todoList={todoList} globalFont={globalFont} globalBack={globalBack} theme={theme}
-                        todoId={todoId} routineId={routineId} onTodoId={onTodoId} onRoutineId={onRoutineId}
-                        onTheme={onTheme} onTodo={onTodo} onRoutine={onRoutine} onLoading={onLoading}/>
-                </ScrollView>
-                <Modal
-                    animationType="fade"
-                    transparent={true}
-                    visible={todoModal}
-                >
-                    <View style={{flex:1,justifyContent:'center',alignItems:'center',backgroundColor:'#00000010'}}>
-                        <View style={[styles.modal,{backgroundColor: globalBack}]}>
-                            <Text style={[styles.modalTitle,{color:globalFont}]}>계획 확인</Text>
-                            <Text style={{color: globalFont,fontSize:16,paddingVertical:10,paddingHorizontal:20}}>
-                                {todoList.find(fd => fd.id === todoModalId)?.content}
-                            </Text>
-                            <View style={{flexDirection:'row',justifyContent:'space-evenly',marginTop:5}}>
-                            <Pressable
-                                onPress={closeTodoModal}>
-                                    <Image source={ require(  '../assets/image/cancel.png') } 
-                                        style={styles.modalBut}/>
-                            </Pressable>
-                            <Pressable
-                                onPress={() => {
-                                    onTodoSuccess(todoModalId)
-                                    closeTodoModal()
-                                }}
-                                >
-                                <Image source={ require(  '../assets/image/check.png') } 
-                                    style={styles.modalBut}/>
-                            </Pressable>
-                            <Pressable
-                                onPress={() => {
-                                    closeTodoModal()
-                                    onSetLatId(todoModalId)
-                                    onSetLater(true)
-                                }}
-                                >
-                                <Image source={ require(  '../assets/image/later.png') } 
-                                    style={styles.modalBut}/>
-                            </Pressable>
-                        </View>
-                        </View>
-                    </View>
-                </Modal>
-                <Modal
-                    animationType="fade"
-                    transparent={true}
-                    visible={routineModal}
-                >
-                    <View style={{flex:1,justifyContent:'center',alignItems:'center',backgroundColor:'#00000010'}}>
-                        <View style={[styles.modal,{backgroundColor: globalBack}]}>
-                            <Text style={[styles.modalTitle,{color:globalFont}]}>루틴 확인</Text>
-                            <Text style={{color: globalFont,fontSize:16,paddingVertical:10,paddingHorizontal:20}}>
-                                {routineList.find(fd => fd.id === routineModalId)?.content}
-                            </Text>
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{flex:1}}>
+            <TouchableWithoutFeedback onPress={() => Keyboard.dismiss()} disabled={!key}>
+                <View style={{flex:1,backgroundColor:globalBack}}>
+                    <ScrollView
+                        ref={ scrollRef }
+                        pagingEnabled
+                        scrollEnabled={scrollActive}
+                        horizontal
+                        keyboardShouldPersistTaps='handled'
+                        showsHorizontalScrollIndicator={false}
+                        contentContainerStyle={{width: `300%`}}
+                        scrollEventThrottle={50}
+                        onMomentumScrollEnd={pageChange}
+                        decelerationRate="fast"
+                    >
+                        <Main globalFont={globalFont} keys={key} routineId={routineId} later={later} latId={latId}
+                            onSetLatId={onSetLatId} onSetLater={onSetLater} onAttain={onAttain} onMoveTodo={onMoveTodo} onMoveRoutine={onMoveRoutine}
+                            onTodoAlarm={onTodoAlarm} onCancelAlarm={onCancelAlarm} onTodoDTO={onTodoDTO} onTodoCheck={onTodoCheck}
+                            onRoutineCheck={onRoutineCheck} onMove={onMove} onTodoDelete={onTodoDelete} onRoutineDTO={onRoutineDTO}
+                            onRoutineEnd={onRoutineEnd} onRoutineRe={onRoutineRe} onRoutineUpdate={onRoutineUpdate} onScrollActive={onScrollActive}
+                            onTodoUpdateContent={onTodoUpdateContent} onRoutineUpdateContent={onRoutineUpdateContent}
+                            todoList={todoList} routineList={routineList} globalBack={globalBack} theme={theme}/>
+                        <Attain globalFont={globalFont} todoList={todoList} routineList={routineList} date={attainDate} page={page} keys={key}
+                            type={attainType} startDate={startDate} endDate={endDate} onStartDate={onStartDate} onEndDate={onEndDate}
+                            onDate={onDate} onAttainType={onAttainType} globalBack={globalBack} theme={theme}/>
+                        <Setting routineList={routineList} todoList={todoList} globalFont={globalFont} globalBack={globalBack} theme={theme}
+                            todoId={todoId} routineId={routineId} onTodoId={onTodoId} onRoutineId={onRoutineId} deleteAlarm={deleteAlarm} addAlarm={addAlarm}
+                            onTheme={onTheme} onTodo={onTodo} onRoutine={onRoutine} onLoading={onLoading}/>
+                    </ScrollView>
+                    <Modal
+                        animationType="fade"
+                        transparent={true}
+                        visible={todoModal}
+                    >
+                        <View style={{flex:1,justifyContent:'center',alignItems:'center',backgroundColor:'#00000010'}}>
+                            <View style={[styles.modal,{backgroundColor: globalBack}]}>
+                                <Text style={[styles.modalTitle,{color:globalFont}]}>계획 확인</Text>
+                                <Text style={{color: globalFont,fontSize:16,paddingVertical:10,paddingHorizontal:20}}>
+                                    {todoList.find(fd => fd.id === todoModalId)?.content}
+                                </Text>
                                 <View style={{flexDirection:'row',justifyContent:'space-evenly',marginTop:5}}>
-                            <Pressable
-                                onPress={closeRoutineModal}>
-                                    <Image source={ require(  '../assets/image/cancel.png') } 
+                                <Pressable
+                                    onPress={closeTodoModal}>
+                                        <Image source={ require(  '../assets/image/cancel.png') } 
+                                            style={styles.modalBut}/>
+                                </Pressable>
+                                <Pressable
+                                    onPress={() => {
+                                        onTodoSuccess(todoModalId)
+                                        closeTodoModal()
+                                    }}
+                                    >
+                                    <Image source={ require(  '../assets/image/check.png') } 
                                         style={styles.modalBut}/>
-                            </Pressable>
-                            <Pressable
-                                onPress={() => {
-                                    onRoutineSuccess(routineModalId,rouDate)
-                                    closeRoutineModal()
-                                }}
-                                >
-                                <Image source={ require(  '../assets/image/check.png') } 
-                                    style={styles.modalBut}/>
-                            </Pressable>
+                                </Pressable>
+                                <Pressable
+                                    onPress={() => {
+                                        closeTodoModal()
+                                        onSetLatId(todoModalId)
+                                        onSetLater(true)
+                                    }}
+                                    >
+                                    <Image source={ require(  '../assets/image/later.png') } 
+                                        style={styles.modalBut}/>
+                                </Pressable>
+                            </View>
+                            </View>
                         </View>
+                    </Modal>
+                    <Modal
+                        animationType="fade"
+                        transparent={true}
+                        visible={routineModal}
+                    >
+                        <View style={{flex:1,justifyContent:'center',alignItems:'center',backgroundColor:'#00000010'}}>
+                            <View style={[styles.modal,{backgroundColor: globalBack}]}>
+                                <Text style={[styles.modalTitle,{color:globalFont}]}>루틴 확인</Text>
+                                <Text style={{color: globalFont,fontSize:16,paddingVertical:10,paddingHorizontal:20}}>
+                                    {routineList.find(fd => fd.id === routineModalId)?.content}
+                                </Text>
+                                    <View style={{flexDirection:'row',justifyContent:'space-evenly',marginTop:5}}>
+                                <Pressable
+                                    onPress={closeRoutineModal}>
+                                        <Image source={ require(  '../assets/image/cancel.png') } 
+                                            style={styles.modalBut}/>
+                                </Pressable>
+                                <Pressable
+                                    onPress={() => {
+                                        onRoutineSuccess(routineModalId,rouDate)
+                                        closeRoutineModal()
+                                    }}
+                                    >
+                                    <Image source={ require(  '../assets/image/check.png') } 
+                                        style={styles.modalBut}/>
+                                </Pressable>
+                            </View>
+                            </View>
                         </View>
-                    </View>
-                </Modal>
-            </View>
-        </TouchableWithoutFeedback>
+                    </Modal>
+                </View>
+            </TouchableWithoutFeedback>
+        </KeyboardAvoidingView>
     )
 }
 

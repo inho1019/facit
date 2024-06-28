@@ -1,4 +1,4 @@
-import { Alert, Image, Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Alert, Image, Linking, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { RoutineDTO, TodoDTO } from "../Index";
 import RNFS from 'react-native-fs';
 import DocumentPicker from 'react-native-document-picker';
@@ -19,6 +19,8 @@ interface Props {
     todoId: number;
     routineId: number;
     theme : "white" | "black";
+    deleteAlarm: (id : number) => void;
+    addAlarm: (id : number, date : Date, content : string) => void;
     onTheme: () => void;
     onTodo: (lsit : TodoDTO[]) => void;
     onRoutine: (list : RoutineDTO[]) => void;
@@ -27,7 +29,7 @@ interface Props {
     onLoading: (bool : boolean) => void; 
 }
 
-const Setting: React.FC<Props> = ({globalFont,routineList,todoList,globalBack,routineId,todoId,theme,onTheme,onTodo,onRoutine,onRoutineId,onTodoId,onLoading}) => {    
+const Setting: React.FC<Props> = ({globalFont,routineList,todoList,globalBack,routineId,todoId,theme,onTheme,onTodo,onRoutine,onRoutineId,onTodoId,onLoading,deleteAlarm,addAlarm}) => {    
 
     const [modalConfirm,setModalConfirm] = useState<ModalDTO>({
         active : false,
@@ -51,31 +53,51 @@ const Setting: React.FC<Props> = ({globalFont,routineList,todoList,globalBack,ro
         try {
             const jsonData = [routineList,todoList,routineId,todoId]; // 예시 JSON 데이터
       
-            const filePath = `${RNFS.DownloadDirectoryPath}/facit-${new Date().getTime()}.json`; // 저장할 경로
-      
+            const filePath = `${Platform.OS === 'ios' ? RNFS.DocumentDirectoryPath : RNFS.DownloadDirectoryPath}/facit-${Platform.OS === 'ios' ? 0 : new Date().getTime()}.json`; // 저장할 경로
+
             await RNFS.writeFile(filePath, JSON.stringify(jsonData), 'utf8');
+
+
+            if (Platform.OS === 'ios') {
+                const res : any = await DocumentPicker.pickDirectory();
+                
+                const destPath = `${decodeURI(res.uri)}/facit.json`;
+                
+                await RNFS.writeFile(destPath, JSON.stringify(jsonData), 'utf8');
+                
+                setModalConfirm({
+                    active : true,
+                    type : 'export',
+                    title : '데이터 내보내기 경로',
+                    message : destPath,
+                    buttonExist : false
+                })
+            } else {
+                setModalConfirm({
+                    active : true,
+                    type : 'export',
+                    title : '데이터 내보내기 경로',
+                    message : filePath,
+                    buttonExist : false
+                })
+            }
       
-            setModalConfirm({
-                active : true,
-                type : 'export',
-                title : '데이터 내보내기 경로',
-                message : filePath,
-                buttonExist : false
-            })
           } catch (error) {
             console.log('Error saving file:', error);
           }
     }
 
+    
     const fileImport = async () => {
         try {
             const res : any = await DocumentPicker.pickSingle({
                 type: [DocumentPicker.types.json],
             });
-            const filePath = res.uri;
+            const filePath = res.uri ;
             onLoading(true);
             const fileData = await RNFS.readFile(filePath, 'utf8');
             const jsonData : [ RoutineDTO[], TodoDTO[], number, number ] = JSON.parse(fileData);
+            todoList.map((todo) => deleteAlarm(todo.id));
             onRoutineId(jsonData[2]);
             onTodoId(jsonData[3]);
             requestAnimationFrame(() => {
@@ -88,6 +110,9 @@ const Setting: React.FC<Props> = ({globalFont,routineList,todoList,globalBack,ro
                 onTodo(jsonData[1].map((todo) => {
                     todo.alarmDate = new Date(todo.alarmDate);
                     todo.date = new Date(todo.date);
+                    if (todo.alarm) {
+                        addAlarm(todo.id, new Date(todo.alarmDate), todo.content);
+                    }
                     return todo;
                 }));
                 setTimeout(() => onLoading(false), 1000);
@@ -96,7 +121,13 @@ const Setting: React.FC<Props> = ({globalFont,routineList,todoList,globalBack,ro
         } catch (error) {
             console.log('Error picking file:', error);
         }
-      };
+    };
+
+    const openLink = (url : string) => {
+        Linking.openURL(url)
+        .catch((err) => console.error('Error opening external link:', err));
+    };
+
 
     return(
         <View style={{flex:1}}>
@@ -160,6 +191,11 @@ const Setting: React.FC<Props> = ({globalFont,routineList,todoList,globalBack,ro
                 >
                     <Text style={{fontSize:17,color:globalFont}}>데이터 가져오기</Text>
                 </Pressable>
+                <Pressable
+                    onPress={() => openLink('https://kr.freepik.com/')}>
+                    <Text style={{textAlign:'center',fontSize:15,color:'darkgray',fontWeight:'bold',marginVertical:30}}>
+                        Images Designed By FreePik</Text>
+                </Pressable>
             </ScrollView>
             <Modal
                 animationType="fade"
@@ -182,8 +218,8 @@ const Setting: React.FC<Props> = ({globalFont,routineList,todoList,globalBack,ro
                             </Pressable>}
                             <Pressable
                                 onPress={() => {
-                                    modalConfirm.type === 'import' && fileImport()
                                     closeConfirm()
+                                    modalConfirm.type === 'import' && requestAnimationFrame(() => fileImport())
                                 }}
                                 >
                                 <Image source={ require(  '../../assets/image/check.png') } 

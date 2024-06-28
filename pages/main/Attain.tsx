@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Animated, Dimensions, Easing, Image, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { Animated, Dimensions, Easing, Image, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { AttainType, RoutineDTO, TodoDTO } from "../Index";
 import { AnimatedCircularProgress } from 'react-native-circular-progress';
 import { Calendar } from "react-native-calendars";
@@ -414,7 +414,7 @@ const Attain: React.FC<Props> = ({globalFont,todoList,routineList,page,date,star
     const sinceUntil = (routineDTO : RoutineDTO | undefined) => {
         if(routineDTO) {
             return routineDTO.end ? `${(new Date(routineDTO.startDate).getFullYear().toString().slice(-2))}.${(new Date(routineDTO.startDate).getMonth()+1).toString().padStart(2, '0')}.${(new Date(routineDTO.startDate).getDate()).toString().padStart(2, '0')} ~ ${(new Date(routineDTO.endDate).getFullYear().toString().slice(-2))}.${(new Date(routineDTO.endDate).getMonth()+1).toString().padStart(2, '0')}.${(new Date(routineDTO.endDate).getDate()).toString().padStart(2, '0')}` :
-            `${(new Date(routineDTO.startDate).getFullYear().toString().slice(-2))}.${(new Date(routineDTO.startDate).getMonth()+1).toString().padStart(2, '0')}.${(new Date(routineDTO.startDate).getDate()).toString().padStart(2, '0')} ~`
+            `${(new Date(routineDTO.startDate).getFullYear().toString().slice(-2))}.${(new Date(routineDTO.startDate).getMonth()+1).toString().padStart(2, '0')}.${(new Date(routineDTO.startDate).getDate()).toString().padStart(2, '0')} ~ `
         } 
     }
 
@@ -458,15 +458,15 @@ const Attain: React.FC<Props> = ({globalFont,todoList,routineList,page,date,star
                             scrollEventThrottle={50}
                             decelerationRate="fast"
                         >
-                            <Text style={[styles.topTitle,{color:globalFont}]}>일간</Text>        
-                            <Text style={[styles.topTitle,{color:globalFont}]}>주간</Text>        
-                            <Text style={[styles.topTitle,{color:globalFont}]}>월간</Text>        
-                            <Text style={[styles.topTitle,{color:globalFont}]}>연간</Text>
-                            <Text style={[styles.topTitle,{color:globalFont}]}>선택</Text>        
+                            <Text style={[styles.topTitle,{color:globalFont,lineHeight : Platform.OS === 'ios' ? 50 : undefined, overflow:'hidden' }]}>일간</Text>        
+                            <Text style={[styles.topTitle,{color:globalFont,lineHeight : Platform.OS === 'ios' ? 50 : undefined, overflow:'hidden' }]}>주간</Text>        
+                            <Text style={[styles.topTitle,{color:globalFont,lineHeight : Platform.OS === 'ios' ? 50 : undefined, overflow:'hidden' }]}>월간</Text>        
+                            <Text style={[styles.topTitle,{color:globalFont,lineHeight : Platform.OS === 'ios' ? 50 : undefined, overflow:'hidden' }]}>연간</Text>
+                            <Text style={[styles.topTitle,{color:globalFont,lineHeight : Platform.OS === 'ios' ? 50 : undefined, overflow:'hidden' }]}>선택</Text>        
                     </ScrollView>
                 </View>
             </View>
-            <Animated.View style={[styles.attainBox,{backgroundColor: theme === "white" ? 'white' : '#333333',height: aniBox.interpolate({ inputRange: [0, 1], outputRange: [75,boxHeight]})}]}>
+            <Animated.View style={[styles.attainBox,{backgroundColor: theme === "white" ? 'white' : '#333333', borderColor: 'lightgray', borderWidth:  Platform.OS === 'ios' ? theme === "white" ? 1 : 0 : 0 , height: aniBox.interpolate({ inputRange: [0, 1], outputRange: [75,boxHeight]})}]}>
                 <View style={{ paddingTop: 10, paddingBottom: 40, gap: 20}} onLayout={onViewLayout}>
                     { type === "date" ? 
                     // 일간
@@ -693,7 +693,8 @@ const Attain: React.FC<Props> = ({globalFont,todoList,routineList,page,date,star
                                 width: aniTot,
                                 backgroundColor:theme === "white" ? 'lightgray' : "#222222",
                                 borderRadius:Math.floor(windowWidth*0.5 - 50) * 0.5}}>
-                                    <Animated.Text style={{width:50,fontWeight:'bold', opacity: aniTxt, color:globalFont, position:'absolute', height:Math.floor(windowWidth*0.5 - 50) * 0.25,left: 10,textAlignVertical:'center'}}>{Math.floor(totalFill)}%</Animated.Text>
+                                    <Animated.Text style={{width:50,fontWeight:'bold', opacity: aniTxt, color:globalFont, position:'absolute', height:Math.floor(windowWidth*0.5 - 50) * 0.25,left: 10,textAlignVertical:'center',lineHeight : Platform.OS === 'ios' ? 
+                                    Math.floor(windowWidth*0.5 - 50) * 0.25 : undefined }}>{Math.floor(totalFill)}%</Animated.Text>
                             </Animated.View>
                         </View>
                     </View>
@@ -704,8 +705,8 @@ const Attain: React.FC<Props> = ({globalFont,todoList,routineList,page,date,star
                     <Text style={[styles.h2,{color:globalFont, marginLeft: 5,marginBottom:10,flex:1}]}>달성</Text>
                     <TextInput 
                         ref={inputRef}
-                        style={{backgroundColor: globalBack,paddingHorizontal:5,paddingVertical:3,flex:1,
-                                marginVertical:5,marginLeft:2,borderWidth:1,borderColor: theme === "white" ? 'darkgray' : 'gray',color:globalFont}}
+                        style={{backgroundColor: globalBack,paddingHorizontal:5,paddingVertical:  Platform.OS === 'ios' ? 8 : 3,flex:1,
+                                marginVertical: 5,marginLeft:2,borderWidth:1,borderColor: theme === "white" ? 'darkgray' : 'gray',color:globalFont}}
                         placeholder="검색"
                         placeholderTextColor="gray"
                         onChangeText={(text) => setSearch(text)}
@@ -747,7 +748,7 @@ const Attain: React.FC<Props> = ({globalFont,todoList,routineList,page,date,star
                             routineFillList.filter(rou => rou.content.includes(search)).map((item,index) => 
                             <Animated.View key={`${item}_${index}`} style={[styles.items,{opacity:aniTxt}]}>
                                 <View
-                                    style={{position:'absolute',width: `${routineSuc(item) / routineTot(item,false) * 100}%`,height:7,backgroundColor: 'tomato',bottom:-2}}
+                                    style={{position:'absolute',width: `${routineSuc(item) / routineTot(item,false) * 100}%`,height:6,backgroundColor: 'tomato',bottom:-1}}
                                 />
                                 <Text style={{color:globalFont,margin:10,flex:1}}>{item.content}</Text>
                                 <Pressable
@@ -843,36 +844,26 @@ const Attain: React.FC<Props> = ({globalFont,todoList,routineList,page,date,star
                                 </Pressable>
                             </View>
                             <View style={[styles.modalTxtBox,{backgroundColor:theme === "white" ? 'whitesmoke' : '#222222'}]}>
-                                <View style={{flexDirection:'row',justifyContent:"space-between"}}>
-                                    <View style={{flexDirection:'row',gap:3}}>
-                                        {routineList.find(item => item.id === routineId)?.term.map((item,index) => 
-                                            item && 
-                                            <Text key={`${item}_${index}`} style={{color:globalFont,backgroundColor:theme === "white" ? 'white' : "#444444",width:20,height:20,borderRadius:10,textAlign:'center',fontSize:12}}>
-                                                {index === 1 ? '월' : index === 2 ? '화' : index === 3 ? '수' : index === 4 ? '목' : index === 5 ? '금' : index === 6  ? '토' : '일'}
-                                            </Text>
-                                        )}
-                                    </View>
-                                    <Text style={{color:globalFont,backgroundColor:theme === "white" ? 'white' : "#444444",height:20,borderRadius:10,textAlign:'center',paddingHorizontal:7,fontSize:12,paddingTop:2}}>
-                                        {sinceUntil(routineList.find(item => item.id === routineId))}
-                                    </Text>
-                                </View>
+                                <Text style={{color:globalFont,fontSize:13,fontWeight:'bold'}}>
+                                    {sinceUntil(routineList.find(item => item.id === routineId))}
+                                </Text>
                                 <Text style={{color:globalFont,margin:5}}>
                                     {routineList.find(item => item.id === routineId)?.content}
                                 </Text>
                             </View>
                             { type !== "date" &&
                                 <View style={{paddingHorizontal:30,marginTop:20}}>
-                                    <Text style={{color:globalFont,marginLeft:10,marginBottom:2}}>
+                                    <Text style={{color:globalFont,marginLeft:7,marginBottom:3}}>
                                         기간 달성도
                                     </Text>
-                                    <View style={{width:'100%',backgroundColor: theme === "white" ? 'aliceblue' : '#444444',borderRadius:Math.floor(windowWidth*0.5 - 50) * 0.1,overflow:'hidden'}}>
+                                    <View style={{width:'100%',backgroundColor: theme === "white" ? 'aliceblue' : '#444444',borderRadius:Math.floor(windowWidth*0.5 - 50) * 0.07,overflow:'hidden'}}>
                                         <Animated.View style={{
                                             height:Math.floor(windowWidth*0.5 - 50) * 0.25,
                                             width: aniBarA,
                                             backgroundColor:theme === "white" ? '#2E8DFF' : "#222222",
-                                            borderRadius:Math.floor(windowWidth*0.5 - 50) * 0.1}}>
-                                                <Animated.Text style={{width:50,fontWeight:'bold', opacity: aniMoTxt, color:'white', position:'absolute', 
-                                                    height:Math.floor(windowWidth*0.5 - 50) * 0.25,left: 10,textAlignVertical:'center'}}>
+                                            borderRadius:Math.floor(windowWidth*0.5 - 50) * 0.07}}>
+                                                <Animated.Text style={{width:50,fontWeight:'bold', opacity: aniMoTxt, color:'white', position:'absolute', textDecorationLine:'underline',
+                                                    height:Math.floor(windowWidth*0.5 - 50) * 0.25,left: 10,textAlignVertical:'center',lineHeight : Platform.OS === 'ios' ? Math.floor(windowWidth*0.5 - 50) * 0.25 : undefined}}>
                                                         {routineSuc(routineList.find(item => item.id === routineId))}/{routineTot(routineList.find(item => item.id === routineId),false)}
                                                 </Animated.Text>
                                         </Animated.View>
@@ -880,17 +871,17 @@ const Attain: React.FC<Props> = ({globalFont,todoList,routineList,page,date,star
                                 </View>
                             }
                             <View style={{paddingHorizontal:30,marginTop:20}}>
-                                <Text style={{color:globalFont,marginLeft:10,marginBottom:2}}>
+                                <Text style={{color:globalFont,marginLeft:7,marginBottom:3}}>
                                     전체 달성도
                                 </Text>
-                                <View style={{width:'100%',backgroundColor: theme === "white" ? 'snow' : '#444444',borderRadius:Math.floor(windowWidth*0.5 - 50) * 0.1,overflow:'hidden'}}>
+                                <View style={{width:'100%',backgroundColor: theme === "white" ? 'snow' : '#444444',borderRadius:Math.floor(windowWidth*0.5 - 50) * 0.07,overflow:'hidden'}}>
                                     <Animated.View style={{
                                         height:Math.floor(windowWidth*0.5 - 50) * 0.25,
                                         width: aniBarB,
                                         backgroundColor:theme === "white" ? 'tomato' : "#222222",
-                                        borderRadius:Math.floor(windowWidth*0.5 - 50) * 0.1}}>
-                                            <Animated.Text style={{width:50,fontWeight:'bold', opacity: aniMoTxt, color:'white', position:'absolute', 
-                                                height:Math.floor(windowWidth*0.5 - 50) * 0.25,left: 10,textAlignVertical:'center'}}>
+                                        borderRadius:Math.floor(windowWidth*0.5 - 50) * 0.07}}>
+                                            <Animated.Text style={{width:50,fontWeight:'bold', opacity: aniMoTxt, color:'white', position:'absolute',textDecorationLine:'underline',
+                                                height:Math.floor(windowWidth*0.5 - 50) * 0.25,left: 10,textAlignVertical:'center',lineHeight : Platform.OS === 'ios' ? Math.floor(windowWidth*0.5 - 50) * 0.25 : undefined}}>
                                                     {routineNowSuc(routineList.find(item => item.id === routineId))}/{routineTot(routineList.find(item => item.id === routineId),true)}
                                             </Animated.Text>
                                     </Animated.View>
@@ -905,11 +896,56 @@ const Attain: React.FC<Props> = ({globalFont,todoList,routineList,page,date,star
                                 }}
                                 theme={{
                                     'stylesheet.calendar.header': {
+                                        dayTextAtIndex0: {
+                                            fontWeight: routineList.find(item => item.id === routineId)?.term[1] ? 'bold' : 'normal',
+                                            opacity: routineList.find(item => item.id === routineId)?.term[1] ? 1 : 0.3,
+                                            borderBottomWidth: routineList.find(item => item.id === routineId)?.term[1] ? 2 : 0,
+                                            borderColor: globalFont,
+                                            paddingBottom: 4
+                                        },
+                                        dayTextAtIndex1: {
+                                            fontWeight: routineList.find(item => item.id === routineId)?.term[2] ? 'bold' : 'normal',
+                                            opacity: routineList.find(item => item.id === routineId)?.term[2] ? 1 : 0.3,
+                                            borderBottomWidth: routineList.find(item => item.id === routineId)?.term[2] ? 2 : 0,
+                                            borderColor: globalFont,
+                                            paddingBottom: 4
+                                        },
+                                        dayTextAtIndex2: {
+                                            fontWeight: routineList.find(item => item.id === routineId)?.term[3] ? 'bold' : 'normal',
+                                            opacity: routineList.find(item => item.id === routineId)?.term[3] ? 1 : 0.3,
+                                            borderBottomWidth: routineList.find(item => item.id === routineId)?.term[3] ? 2 : 0,
+                                            borderColor: globalFont,
+                                            paddingBottom: 4
+                                        },
+                                        dayTextAtIndex3: {
+                                            fontWeight: routineList.find(item => item.id === routineId)?.term[4] ? 'bold' : 'normal',
+                                            opacity: routineList.find(item => item.id === routineId)?.term[4] ? 1 : 0.3,
+                                            borderBottomWidth: routineList.find(item => item.id === routineId)?.term[4] ? 2 : 0,
+                                            borderColor: globalFont,
+                                            paddingBottom: 4
+,                                        },
+                                        dayTextAtIndex4: {
+                                            fontWeight: routineList.find(item => item.id === routineId)?.term[5] ? 'bold' : 'normal',
+                                            opacity: routineList.find(item => item.id === routineId)?.term[5] ? 1 : 0.3,
+                                            borderBottomWidth: routineList.find(item => item.id === routineId)?.term[5] ? 2 : 0,
+                                            borderColor: globalFont,
+                                            paddingBottom: 4
+                                        },
                                         dayTextAtIndex5: {
-                                            color: '#2E8DFF'
+                                            color: '#2E8DFF',
+                                            fontWeight: routineList.find(item => item.id === routineId)?.term[6] ? 'bold' : 'normal',
+                                            opacity: routineList.find(item => item.id === routineId)?.term[6] ? 1 : 0.3,
+                                            borderBottomWidth: routineList.find(item => item.id === routineId)?.term[6] ? 2 : 0,
+                                            borderColor: '#2E8DFF',
+                                            paddingBottom: 4
                                         },
                                         dayTextAtIndex6: {
-                                            color: 'tomato'
+                                            color: 'tomato',
+                                            fontWeight: routineList.find(item => item.id === routineId)?.term[0] ? 'bold' : 'normal',
+                                            opacity: routineList.find(item => item.id === routineId)?.term[0] ? 1 : 0.3,
+                                            borderBottomWidth: routineList.find(item => item.id === routineId)?.term[0] ? 2 : 0,
+                                            borderColor: '#tomato',
+                                            paddingBottom: 4
                                         }
                                     },
                                     textSaturdayColor: '#2E8DFF',
@@ -951,6 +987,7 @@ const styles = StyleSheet.create({
         height: 45,
         textAlignVertical:'center',
         textAlign: 'center',
+        
         fontSize: 25,
         fontWeight: 'bold',
     },
@@ -982,6 +1019,13 @@ const styles = StyleSheet.create({
         paddingHorizontal: 5,
         borderRadius: 10,
         elevation: 5,
+        shadowColor: "rgb(50, 50, 50)",
+        shadowOpacity: 0.1,
+        shadowRadius: 5,
+        shadowOffset: {
+            height: -1,
+            width: 0,
+        },
     },
     modalTitle : {
         fontSize : 21,
@@ -991,9 +1035,9 @@ const styles = StyleSheet.create({
     modalTxtBox : {
         marginTop: 20,
         padding: 13,
-        gap: 7,
+        gap: 5,
         marginHorizontal:25,
-        borderRadius:20,
+        borderRadius:15,
     }
 });
 export default Attain;

@@ -2,12 +2,15 @@ import React from 'react';
 import { SafeAreaView } from 'react-native';
 
 import Index from './pages/Index';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 function App(): React.JSX.Element {
 
   return (
     <SafeAreaView style={{flex:1,backgroundColor:'white'}}>
-      <Index/>
+      <GestureHandlerRootView>
+        <Index/>
+      </GestureHandlerRootView>
     </SafeAreaView>
   );
 }
