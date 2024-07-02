@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Animated, Dimensions, Easing, Image, Keyboard, KeyboardAvoidingView, Modal, PanResponder, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, TouchableWithoutFeedback, View } from 'react-native';
+import { Animated, Dimensions, Easing, Image, Keyboard, Modal, PanResponder, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, TouchableWithoutFeedback, View } from 'react-native';
 import { Calendar, LocaleConfig } from 'react-native-calendars'
 import { RoutineDTO, TodoDTO } from '../Index';
 import { NestableDraggableFlatList, NestableScrollContainer, RenderItemParams, ScaleDecorator } from 'react-native-draggable-flatlist';
@@ -893,7 +893,7 @@ const Main: React.FC<Props> = ({globalFont,keys,todoList,routineList,routineId,l
                                     subMessage : '※삭제된 계획은 복구할 수 없습니다.'
                                 })}}>
                             <Image source={ require(  '../../assets/image/delete-black.png') } 
-                            style={{width:30,height:30,marginHorizontal:1,marginVertical: item.success ? 16.5 : 0}}/>
+                            style={{width:30,height:30,marginHorizontal:1,marginVertical: item.success ? 16 : 0}}/>
                         </Pressable>
                         {!item.success && <Pressable 
                             disabled={index === openIdx}
@@ -906,8 +906,8 @@ const Main: React.FC<Props> = ({globalFont,keys,todoList,routineList,routineId,l
                             onPress={() => openIdx === -1 ? setOpenIdx(index) : onOpenIndex(index)}>
                             <Animated.View
                                 style={[styles.botButBox,
-                                {width: index === openIdx ? aniIdx.interpolate({ inputRange: [0, 1], outputRange: [33 , 88]  }) : 33,
-                                marginLeft: index === openIdx ? aniIdx.interpolate({ inputRange: [0, 1], outputRange: [0, -55]  }) : 0,
+                                {width: index === openIdx ? aniIdx.interpolate({ inputRange: [0, 1], outputRange: [32 , 87]  }) : 32,
+                                marginLeft: index === openIdx ? aniIdx.interpolate({ inputRange: [0, 1], outputRange: [0, -56]  }) : 0,
                                 backgroundColor: isActive ? theme === "white" ? "whitesmoke" : "#333333" : theme === "white" ? "white" : "#363636"}]}>
                                 <Pressable
                                     onPress={() => item.alarm ? onCancelAlarm(item.id) : onAlarmModal(item.id) }
@@ -1218,11 +1218,9 @@ const Main: React.FC<Props> = ({globalFont,keys,todoList,routineList,routineId,l
                         />
                     </Animated.View>
                     { <View style={{paddingBottom: (!upTodoKey && !upRouKey && !keys) ? 85 : 10}}/> }
-                    { Platform.OS === 'android' && <View style={{paddingBottom: (upTodoKey || upRouKey) ? 50 : keys ? 50 :  0}}/> }
                 </NestableScrollContainer>
             </View>}
             {!later && !upTodoKey && !upRouKey && moveMode === 'none' &&
-            <KeyboardAvoidingView behavior={'position'}>
                 <View style={{flex:0, backgroundColor: keys ? globalBack : '#00000000',position:keys ? 'relative' : 'absolute',bottom: 0}}>
                     <View style={[styles.contentBox,{opacity: keys ? 1 : 0.8, backgroundColor : theme === "white" ? "white" : "#333333"}]}>
                         <TextInput 
@@ -1241,8 +1239,7 @@ const Main: React.FC<Props> = ({globalFont,keys,todoList,routineList,routineId,l
                                 {opacity: todoDTO.content.length > 0 ? 1 : 0.3 }]}/>
                         </Pressable>
                     </View>
-                </View>
-            </KeyboardAvoidingView>}
+                </View>}
             <Modal
                 animationType="fade"
                 transparent={true}
@@ -1695,14 +1692,14 @@ const styles = StyleSheet.create({
         borderColor: 'black',
         borderWidth: 2,
         paddingTop: 0.5,
-        height: 33,
+        height: 32,
         borderRadius: 20,
         paddingHorizontal:1
     },
     rightImg : {
         width: 25,
         height: 25,
-        margin: 1
+        margin: 0.7
     },
     rouTxt : {
         width:34,
@@ -1729,14 +1726,6 @@ const styles = StyleSheet.create({
         paddingVertical: 10,
         paddingHorizontal: 5,
         borderRadius: 10,
-        elevation: 5,
-        shadowColor: "rgb(50, 50, 50)",
-        shadowOpacity: 0.1,
-        shadowRadius: 5,
-        shadowOffset: {
-            height: -1,
-            width: 0,
-        },
     },
     alarm : {
         flexDirection:'row',

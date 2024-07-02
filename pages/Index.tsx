@@ -713,7 +713,7 @@ const Index: React.FC = () => {
     }
 
     return (
-        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{flex:1}}>
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{flex:1}}>
             <TouchableWithoutFeedback onPress={() => Keyboard.dismiss()} disabled={!key}>
                 <View style={{flex:1,backgroundColor:globalBack}}>
                     <ScrollView
@@ -835,7 +835,6 @@ const styles = StyleSheet.create({
         paddingVertical: 10,
         paddingHorizontal: 5,
         borderRadius: 10,
-        elevation: 5,
     },
 })
 

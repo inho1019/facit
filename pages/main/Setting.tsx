@@ -1,4 +1,4 @@
-import { Alert, Image, Linking, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Alert, Image, Linking, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TouchableWithoutFeedback, View } from "react-native";
 import { RoutineDTO, TodoDTO } from "../Index";
 import RNFS from 'react-native-fs';
 import DocumentPicker from 'react-native-document-picker';
@@ -30,6 +30,9 @@ interface Props {
 }
 
 const Setting: React.FC<Props> = ({globalFont,routineList,todoList,globalBack,routineId,todoId,theme,onTheme,onTodo,onRoutine,onRoutineId,onTodoId,onLoading,deleteAlarm,addAlarm}) => {    
+
+    const [howModal,setHowModal] = useState<boolean>(false)
+    const [howNum,setHowNum] = useState<number>(0)
 
     const [modalConfirm,setModalConfirm] = useState<ModalDTO>({
         active : false,
@@ -164,6 +167,20 @@ const Setting: React.FC<Props> = ({globalFont,routineList,todoList,globalBack,ro
                     <Text style={{fontSize:17,color:'darkgray'}}>{theme === 'white' ? '라이트' : '다크'} 모드</Text>
                 </Pressable>
                 <Pressable 
+                    style={({pressed})  => [styles.itemButton,
+                        {
+                            backgroundColor: pressed ? theme === "white" ? 'whitesmoke' : '#333333' : globalBack,
+                            borderBottomColor: theme === "white" ? 'whitesmoke' : '#333333'
+                        }
+                    ]}
+                    onPress={() => {
+                        setHowModal(true);
+                        setHowNum(0);
+                    }}
+                >
+                    <Text style={{fontSize:17,color:globalFont}}>How To Use</Text>
+                </Pressable>
+                <Pressable 
                    style={({pressed})  => [styles.itemButton,
                         {
                             backgroundColor: pressed ? theme === "white" ? 'whitesmoke' : '#333333' : globalBack,
@@ -229,6 +246,41 @@ const Setting: React.FC<Props> = ({globalFont,routineList,todoList,globalBack,ro
                     </View>
                 </View>
             </Modal>
+            <Modal
+                animationType="fade"
+                transparent={true}
+                visible={howModal}
+            >
+                <TouchableWithoutFeedback onPress={() => setHowModal(false)}>
+                    <View
+                        style={{flex:1,backgroundColor: theme === 'white' ? '#00000050' : '#FFFFFF30',height:'100%',justifyContent:'center'}}
+                    >
+                            <View
+                                style={{flexDirection:'row',justifyContent:'space-around', alignItems:'center'}}
+                            >
+                                {howNum !== 0 ? <Pressable
+                                    onPress={() => setHowNum(howNum - 1)}    
+                                >
+                                    <Image source={theme === "white" ? require('../../assets/image/arrow-black.png') : require('../../assets/image/arrow-white.png')} 
+                                    style={{width:25, height:25, transform:[{rotate : '270deg'}]}}/>
+                                </Pressable> : <View  style={{width:25, height:25}}/>}
+                                <Image source={ 
+                                    howNum === 0 ? require( `../../assets/image/use-0.png`) :
+                                    howNum === 1 ? require( `../../assets/image/use-1.png`) :
+                                    howNum === 2 ? require( `../../assets/image/use-2.png`) :
+                                    howNum === 3 ? require( `../../assets/image/use-3.png`) :
+                                    require( `../../assets/image/use-0.png`) } 
+                                style={{width: '70%', aspectRatio: 1/1}} />
+                                {howNum !== 3 ? <Pressable
+                                    onPress={() => setHowNum(howNum + 1)}
+                                >
+                                    <Image source={theme === "white" ? require('../../assets/image/arrow-black.png') : require('../../assets/image/arrow-white.png')} 
+                                    style={{width:25, height:25, transform:[{rotate : '90deg'}]}}/>
+                                </Pressable> : <View  style={{width:25, height:25}}/>}
+                            </View>
+                    </View>
+                </TouchableWithoutFeedback>
+            </Modal>
         </View>
     )
 }
@@ -261,7 +313,6 @@ const styles = StyleSheet.create({
         paddingVertical: 10,
         paddingHorizontal: 5,
         borderRadius: 10,
-        elevation: 5,
     },
 })
 export default Setting;

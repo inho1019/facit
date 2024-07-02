@@ -79,7 +79,7 @@ android {
         applicationId "com.facit"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 19
+        versionCode 23
         versionName "0.1"
     }
     signingConfigs {
