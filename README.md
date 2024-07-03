@@ -1,5 +1,8 @@
 # FacIt
 
+## GET APP
+[text](https://play.google.com/store/apps/details?id=com.facit)
+
 # 사용 패키지
 - "@react-native-async-storage/async-storage": "^1.22.3",
 - "@react-native-community/push-notification-ios": "^1.11.0",

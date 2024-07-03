@@ -769,7 +769,9 @@ const Attain: React.FC<Props> = ({globalFont,todoList,routineList,page,date,star
                     </View>
                 </View>
                 <View style={{flexDirection:'row',justifyContent:'center',flex:1,paddingHorizontal:10,gap:10}}>
-                    <ScrollView style={styles.listBox}>
+                    <ScrollView 
+                        showsVerticalScrollIndicator={false}
+                        style={styles.listBox}>
                         {
                             todoFillList.filter(todo => todo.content.includes(search) && (listMode === 'ok' ? todo.success : !todo.success)).map((item,index) => 
                             <Animated.View key={`${item}_${index}`} style={[styles.items,{opacity:aniTxt,borderColor: theme === 'white' ? 'whitesmoke' : '#333333' }]}>
@@ -783,7 +785,9 @@ const Attain: React.FC<Props> = ({globalFont,todoList,routineList,page,date,star
                             </Animated.View>
                         }
                     </ScrollView>
-                    <ScrollView style={styles.listBox}>
+                    <ScrollView 
+                        showsVerticalScrollIndicator={false}
+                        style={styles.listBox}>
                         {
                             type === 'date' ?
                             routineFillList.filter(rou => rou.content.includes(search) && (listMode === 'ok' ? 
