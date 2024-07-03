@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Animated, Dimensions, Easing, Image, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { Animated, Dimensions, Easing, Image, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View, ToastAndroid } from "react-native";
 import { AttainType, RoutineDTO, TodoDTO } from "../Index";
 import { AnimatedCircularProgress } from 'react-native-circular-progress';
 import { Calendar } from "react-native-calendars";
@@ -795,7 +795,7 @@ const Attain: React.FC<Props> = ({globalFont,todoList,routineList,page,date,star
                                 </Pressable>
                             </Animated.View>) :
                             routineFillList.filter(rou => rou.content.includes(search)).map((item,index) => 
-                            <Animated.View key={`${item}_${index}`} style={[styles.items,{opacity:aniTxt}]}>
+                            <Animated.View key={`${item}_${index}`} style={[styles.items,{opacity:aniTxt,borderColor: theme === 'white' ? 'lightgray' : '#444444'}]}>
                                 {listMode === 'ok' ? <View
                                     style={{position:'absolute',width: `${routineSuc(item) / routineTot(item,false) * 100}%`,height:5,backgroundColor: 'tomato',bottom:-1}}
                                 /> :
@@ -820,8 +820,9 @@ const Attain: React.FC<Props> = ({globalFont,todoList,routineList,page,date,star
                 animationType="fade"
                 transparent={true}
                 visible={calendarModal}
+                onRequestClose={() => ToastAndroid.show('날짜를 선택해 주세요', ToastAndroid.SHORT)}
             >
-                 <View style={{flex:1,justifyContent:'center',alignItems:'center',backgroundColor:'#00000010'}}>
+                 <View style={{flex:1,justifyContent:'center',alignItems:'center',backgroundColor:'#00000020'}}>
                     <View style={[styles.modal,{backgroundColor: globalBack}]}>
                         <Calendar
                         style={{padding:10}}
@@ -884,7 +885,7 @@ const Attain: React.FC<Props> = ({globalFont,todoList,routineList,page,date,star
                     setRoutineModal(false)
                 }}
             >
-                 <View style={{flex:1,justifyContent:'center',alignItems:'center',backgroundColor:'#00000010'}}>
+                 <View style={{flex:1,justifyContent:'center',alignItems:'center',backgroundColor:'#00000020'}}>
                     <View style={[styles.modal,{backgroundColor: globalBack,marginVertical:20}]}>
                         <ScrollView> 
                             <View style={{flexDirection:'row', justifyContent:'space-between',alignItems:'center'}}>
@@ -956,7 +957,7 @@ const Attain: React.FC<Props> = ({globalFont,todoList,routineList,page,date,star
                                         dayTextAtIndex0: {
                                             fontWeight: routineList.find(item => item.id === routineId)?.term[1] ? 'bold' : 'normal',
                                             opacity: routineList.find(item => item.id === routineId)?.term[1] ? 1 : 0.2,
-                                            borderWidth: 2,
+                                            borderWidth: 1.5,
                                             borderColor: routineList.find(item => item.id === routineId)?.term[1] ? globalFont : globalBack,
                                             aspectRatio: 1/1,
                                             textAlignVertical: 'center',
@@ -965,7 +966,7 @@ const Attain: React.FC<Props> = ({globalFont,todoList,routineList,page,date,star
                                         dayTextAtIndex1: {
                                             fontWeight: routineList.find(item => item.id === routineId)?.term[2] ? 'bold' : 'normal',
                                             opacity: routineList.find(item => item.id === routineId)?.term[2] ? 1 : 0.2,
-                                            borderWidth: 2,
+                                            borderWidth: 1.5,
                                             borderColor: routineList.find(item => item.id === routineId)?.term[2] ? globalFont : globalBack,
                                             aspectRatio: 1/1,
                                             textAlignVertical: 'center',
@@ -974,7 +975,7 @@ const Attain: React.FC<Props> = ({globalFont,todoList,routineList,page,date,star
                                         dayTextAtIndex2: {
                                             fontWeight: routineList.find(item => item.id === routineId)?.term[3] ? 'bold' : 'normal',
                                             opacity: routineList.find(item => item.id === routineId)?.term[3] ? 1 : 0.2,
-                                            borderWidth: 2,
+                                            borderWidth: 1.5,
                                             borderColor: routineList.find(item => item.id === routineId)?.term[3] ? globalFont : globalBack,
                                             aspectRatio: 1/1,
                                             textAlignVertical: 'center',
@@ -983,7 +984,7 @@ const Attain: React.FC<Props> = ({globalFont,todoList,routineList,page,date,star
                                         dayTextAtIndex3: {
                                             fontWeight: routineList.find(item => item.id === routineId)?.term[4] ? 'bold' : 'normal',
                                             opacity: routineList.find(item => item.id === routineId)?.term[4] ? 1 : 0.2,
-                                            borderWidth: 2,
+                                            borderWidth: 1.5,
                                             borderColor: routineList.find(item => item.id === routineId)?.term[4] ? globalFont : globalBack,
                                             aspectRatio: 1/1,
                                             textAlignVertical: 'center',
@@ -992,7 +993,7 @@ const Attain: React.FC<Props> = ({globalFont,todoList,routineList,page,date,star
                                         dayTextAtIndex4: {
                                             fontWeight: routineList.find(item => item.id === routineId)?.term[5] ? 'bold' : 'normal',
                                             opacity: routineList.find(item => item.id === routineId)?.term[5] ? 1 : 0.2,
-                                            borderWidth: 2,
+                                            borderWidth: 1.5,
                                             borderColor: routineList.find(item => item.id === routineId)?.term[5] ? globalFont : globalBack,
                                             aspectRatio: 1/1,
                                             textAlignVertical: 'center',
@@ -1002,7 +1003,7 @@ const Attain: React.FC<Props> = ({globalFont,todoList,routineList,page,date,star
                                             color: '#2E8DFF',
                                             fontWeight: routineList.find(item => item.id === routineId)?.term[6] ? 'bold' : 'normal',
                                             opacity: routineList.find(item => item.id === routineId)?.term[6] ? 1 : 0.2,
-                                            borderWidth: 2,
+                                            borderWidth: 1.5,
                                             borderColor: routineList.find(item => item.id === routineId)?.term[6] ? '#2E8DFF' : globalBack,
                                             aspectRatio: 1/1,
                                             textAlignVertical: 'center',
@@ -1012,7 +1013,7 @@ const Attain: React.FC<Props> = ({globalFont,todoList,routineList,page,date,star
                                             color: 'tomato',
                                             fontWeight: routineList.find(item => item.id === routineId)?.term[0] ? 'bold' : 'normal',
                                             opacity: routineList.find(item => item.id === routineId)?.term[0] ? 1 : 0.2,
-                                            borderWidth: 2,
+                                            borderWidth: 1.5,
                                             borderColor: routineList.find(item => item.id === routineId)?.term[0] ? 'tomato' : globalBack,
                                             aspectRatio: 1/1,
                                             textAlignVertical: 'center',

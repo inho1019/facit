@@ -268,6 +268,7 @@ const Index: React.FC = () => {
               timeout = setTimeout(() => {isExitApp = false;}, 2000);
             } else {
                 clearTimeout(timeout);
+                isExitApp = false;
                 BackHandler.exitApp();
             }
             return true;
@@ -763,7 +764,7 @@ const Index: React.FC = () => {
                         visible={todoModal}
                         onRequestClose={closeTodoModal}
                     >
-                        <View style={{flex:1,justifyContent:'center',alignItems:'center',backgroundColor:'#00000010'}}>
+                        <View style={{flex:1,justifyContent:'center',alignItems:'center',backgroundColor:'#00000020'}}>
                             <View style={[styles.modal,{backgroundColor: globalBack}]}>
                                 <Text style={[styles.modalTitle,{color:globalFont}]}>계획 확인</Text>
                                 <Text style={{color: globalFont,fontSize:16,paddingVertical:10,paddingHorizontal:20}}>
@@ -772,7 +773,7 @@ const Index: React.FC = () => {
                                 <View style={{flexDirection:'row',justifyContent:'space-evenly',marginTop:5}}>
                                 <Pressable
                                     onPress={closeTodoModal}>
-                                        <Image source={ require(  '../assets/image/cancel.png') } 
+                                        <Image source={ theme === "white" ? require(  '../assets/image/cancel-black.png') : require(  '../assets/image/cancel-white.png') } 
                                             style={styles.modalBut}/>
                                 </Pressable>
                                 <Pressable
@@ -781,7 +782,7 @@ const Index: React.FC = () => {
                                         closeTodoModal()
                                     }}
                                     >
-                                    <Image source={ require(  '../assets/image/check.png') } 
+                                    <Image source={ theme === "white" ? require(  '../assets/image/check-black.png') : require(  '../assets/image/check-white.png')  } 
                                         style={styles.modalBut}/>
                                 </Pressable>
                                 <Pressable
@@ -791,7 +792,7 @@ const Index: React.FC = () => {
                                         onSetLater(true)
                                     }}
                                     >
-                                    <Image source={ require(  '../assets/image/later.png') } 
+                                    <Image source={ theme === "white" ? require(  '../assets/image/later-black.png') : require(  '../assets/image/later-white.png')  } 
                                         style={styles.modalBut}/>
                                 </Pressable>
                             </View>
@@ -804,7 +805,7 @@ const Index: React.FC = () => {
                         visible={routineModal}
                         onRequestClose={closeRoutineModal}
                     >
-                        <View style={{flex:1,justifyContent:'center',alignItems:'center',backgroundColor:'#00000010'}}>
+                        <View style={{flex:1,justifyContent:'center',alignItems:'center',backgroundColor:'#00000020'}}>
                             <View style={[styles.modal,{backgroundColor: globalBack}]}>
                                 <Text style={[styles.modalTitle,{color:globalFont}]}>루틴 확인</Text>
                                 <Text style={{color: globalFont,fontSize:16,paddingVertical:10,paddingHorizontal:20}}>
@@ -813,7 +814,7 @@ const Index: React.FC = () => {
                                     <View style={{flexDirection:'row',justifyContent:'space-evenly',marginTop:5}}>
                                 <Pressable
                                     onPress={closeRoutineModal}>
-                                        <Image source={ require(  '../assets/image/cancel.png') } 
+                                        <Image source={ theme === "white" ? require(  '../assets/image/cancel-black.png') : require(  '../assets/image/cancel-white.png')  } 
                                             style={styles.modalBut}/>
                                 </Pressable>
                                 <Pressable
@@ -822,7 +823,7 @@ const Index: React.FC = () => {
                                         closeRoutineModal()
                                     }}
                                     >
-                                    <Image source={ require(  '../assets/image/check.png') } 
+                                    <Image source={ theme === "white" ? require(  '../assets/image/check-black.png') : require(  '../assets/image/check-white.png')  } 
                                         style={styles.modalBut}/>
                                 </Pressable>
                             </View>

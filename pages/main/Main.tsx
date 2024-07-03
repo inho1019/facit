@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Animated, BackHandler, Dimensions, Easing, Image, Keyboard, Modal, PanResponder, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, TouchableWithoutFeedback, View } from 'react-native';
+import { Animated, Dimensions, Easing, Image, Keyboard, Modal, PanResponder, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, TouchableWithoutFeedback, View } from 'react-native';
 import { Calendar, LocaleConfig } from 'react-native-calendars'
 import { RoutineDTO, TodoDTO } from '../Index';
 import { NestableDraggableFlatList, NestableScrollContainer, RenderItemParams, ScaleDecorator } from 'react-native-draggable-flatlist';
@@ -842,8 +842,8 @@ const Main: React.FC<Props> = ({globalFont,keys,todoList,routineList,routineId,l
                         }}
                         onPress={ () => onCheck(item.id) }>
                         <Image source={ 
-                            item.success ? require(  '../../assets/image/check.png') : 
-                            require(  '../../assets/image/check_null.png')} 
+                            item.success ? theme === "white" ? require(  '../../assets/image/check-black.png') : require(  '../../assets/image/check-white.png') : 
+                            theme === "white" ? require(  '../../assets/image/check_null-black.png') : require(  '../../assets/image/check_null-white.png')} 
                             style={styles.checkImg}/>
                     </Pressable>
                     <View style={styles.goalContent}>
@@ -892,7 +892,7 @@ const Main: React.FC<Props> = ({globalFont,keys,todoList,routineList,routineId,l
                                     message : '계획를 삭제하시겠습니까?',
                                     subMessage : '※삭제된 계획은 복구할 수 없습니다.'
                                 })}}>
-                            <Image source={ require(  '../../assets/image/delete-black.png') } 
+                            <Image source={ theme === "white" ? require(  '../../assets/image/delete-black.png') : require(  '../../assets/image/delete-white.png') } 
                             style={{width:30,height:30,marginHorizontal:1,marginVertical: item.success ? 16 : 0}}/>
                         </Pressable>
                         {!item.success && <Pressable 
@@ -908,18 +908,19 @@ const Main: React.FC<Props> = ({globalFont,keys,todoList,routineList,routineId,l
                                 style={[styles.botButBox,
                                 {width: index === openIdx ? aniIdx.interpolate({ inputRange: [0, 1], outputRange: [32 , 87]  }) : 32,
                                 marginLeft: index === openIdx ? aniIdx.interpolate({ inputRange: [0, 1], outputRange: [0, -56]  }) : 0,
-                                backgroundColor: isActive ? theme === "white" ? "whitesmoke" : "#333333" : theme === "white" ? "white" : "#363636"}]}>
+                                backgroundColor: isActive ? theme === "white" ? "whitesmoke" : "#333333" : theme === "white" ? "white" : "#333333",
+                                borderColor:globalFont}]}>
                                 <Pressable
                                     onPress={() => item.alarm ? onCancelAlarm(item.id) : onAlarmModal(item.id) }
                                     disabled={index !== openIdx || item.date < new Date(new Date().setHours(0, 0, 0, 0))}>
-                                    <Image source={ item.date < new Date(new Date().setHours(0, 0, 0, 0)) ? require(  '../../assets/image/clock.png') : 
-                                        item.alarm ? require(  '../../assets/image/clock_on.png') : require(  '../../assets/image/clock.png') } 
+                                    <Image source={ item.date < new Date(new Date().setHours(0, 0, 0, 0)) ? theme === "white" ? require(  '../../assets/image/clock-black.png') : require(  '../../assets/image/clock-white.png'): 
+                                        item.alarm ? require(  '../../assets/image/clock_on.png') : theme === "white" ? require(  '../../assets/image/clock-black.png') : require(  '../../assets/image/clock-white.png')} 
                                     style={[styles.rightImg,{opacity: item.date < new Date(new Date().setHours(0, 0, 0, 0)) ? 0.3 : 1 }]}/>
                                 </Pressable>
                                 <Pressable
                                     onPress={() => onRoutineModal(item.id)}
                                     disabled={index !== openIdx}>
-                                    <Image source={ require(  '../../assets/image/upgrade.png') } 
+                                    <Image source={ theme === "white" ? require(  '../../assets/image/upgrade-black.png') : require(  '../../assets/image/upgrade-white.png') } 
                                     style={styles.rightImg}/>
                                 </Pressable>
                                 <Pressable 
@@ -937,7 +938,7 @@ const Main: React.FC<Props> = ({globalFont,keys,todoList,routineList,routineId,l
                                         }
                                     }}
                                     disabled={index !== openIdx}>
-                                    <Image source={ require(  '../../assets/image/later.png') } 
+                                    <Image source={ theme === "white" ? require(  '../../assets/image/later-black.png') : require(  '../../assets/image/later-white.png') } 
                                     style={styles.rightImg}/>
                                 </Pressable>
                             </Animated.View>
@@ -969,7 +970,8 @@ const Main: React.FC<Props> = ({globalFont,keys,todoList,routineList,routineId,l
                         onPress={ () => onRouCheck(item.id) }>
                         <Image source={ 
                             item.success.findIndex((item: string | Date) => dateToInt(item) === dateToInt(date)) !== -1 ? 
-                            require(  '../../assets/image/check.png') : require(  '../../assets/image/check_null.png')} 
+                            theme === "white" ? require(  '../../assets/image/check-black.png') : require(  '../../assets/image/check-white.png') : 
+                            theme === "white" ? require(  '../../assets/image/check_null-black.png') : require(  '../../assets/image/check_null-white.png')} 
                             style={styles.checkImg}/>
                     </Pressable>
                     <View style={styles.goalContent}>
@@ -1022,7 +1024,7 @@ const Main: React.FC<Props> = ({globalFont,keys,todoList,routineList,routineId,l
                                 onUpModal(item.id,item.term,item.alarm,item.end,
                                 item.alarm ? new Date(item.alarmDate).getHours() : new Date().getHours(),
                                 item.alarm ? new Date(item.alarmDate).getMinutes() : new Date().getMinutes())}}>
-                            <Image source={ require(  '../../assets/image/setting.png') } 
+                            <Image source={ theme === "white" ? require(  '../../assets/image/setting-black.png') : require(  '../../assets/image/setting-white.png') } 
                             style={{width:30,height:30,marginHorizontal:3,marginVertical: 18}}/>
                         </Pressable>
                     </View>
@@ -1158,7 +1160,8 @@ const Main: React.FC<Props> = ({globalFont,keys,todoList,routineList,routineId,l
                     height: -1,
                     width: 0,
                 }}}>
-                <View {...panResponder.panHandlers} style={{height:40,paddingTop:2}}>
+                <View {...panResponder.panHandlers} style={{height:theme === 'white' ? 40 : 38 ,paddingTop:2,borderTopRightRadius:20,borderTopLeftRadius:20,
+                    borderWidth: theme === 'white' ? 0 : 2,borderBottomWidth:0,marginHorizontal:-2,borderColor:'#333333'}}>
                     <Image style={{width:32,height:32,alignSelf:'center'}} source={require(  '../../assets/image/drag.png')}/>
                 </View>
                 <Pressable
@@ -1176,7 +1179,8 @@ const Main: React.FC<Props> = ({globalFont,keys,todoList,routineList,routineId,l
                     height: -1,
                     width: 0,
                 }}}>
-                <View {...panResponder.panHandlers} style={{height:40,paddingTop:2}}>
+                <View {...panResponder.panHandlers} style={{height:theme === 'white' ? 40 : 38 ,paddingTop:2,borderTopRightRadius:20,borderTopLeftRadius:20,
+                    borderWidth: theme === 'white' ? 0 : 2,borderBottomWidth:0,marginHorizontal:-2,borderColor:'#333333'}}>
                     <Image style={{width:32,height:32,alignSelf:'center'}} source={require(  '../../assets/image/drag.png')}/>
                 </View>
                 <NestableScrollContainer
@@ -1235,7 +1239,7 @@ const Main: React.FC<Props> = ({globalFont,keys,todoList,routineList,routineId,l
                                 return {...item,content : text} 
                         })}/>
                         <Pressable onPress={ () => todoDTO.content.length > 0 && onDTO() }>
-                            <Image source={require('../../assets/image/schedule_add.png')} style={[styles.scheduleImg,
+                            <Image source={theme === "white" ? require(  '../../assets/image/add-black.png') : require(  '../../assets/image/add-white.png')} style={[styles.scheduleImg,
                                 {opacity: todoDTO.content.length > 0 ? 1 : 0.3 }]}/>
                         </Pressable>
                     </View>
@@ -1246,7 +1250,7 @@ const Main: React.FC<Props> = ({globalFont,keys,todoList,routineList,routineId,l
                 visible={routine}
                 onRequestClose={() => closeRoutineModal()}
             >
-            <View style={{flex:1,justifyContent:'center',alignItems:'center',backgroundColor:'#00000010'}}>
+            <View style={{flex:1,justifyContent:'center',alignItems:'center',backgroundColor:'#00000020'}}>
                 <View style={[styles.modal,{backgroundColor: globalBack}]}>
                     <Text style={[styles.modalTitle,{color:globalFont}]}>루틴 등록</Text>
                     <View style={{flexDirection:'row',width: '100%', justifyContent:'space-evenly',marginTop:20}}>
@@ -1290,8 +1294,8 @@ const Main: React.FC<Props> = ({globalFont,keys,todoList,routineList,routineId,l
                             <View style={{flexDirection:'row',gap:1,alignItems:'center'}}>
                             <Text style={[styles.time,{color:globalFont,fontSize:20, marginBottom: Platform.OS === 'ios' ? 0 : 4.5, marginRight : Platform.OS === 'ios' ? 5 : 0,}]}>알림</Text>
                                 <Switch
-                                    trackColor={{false: 'darkgray', true: '#2E8DFF'}}
-                                    thumbColor={theme === "white" ? 'white' : '#232323'}
+                                    trackColor={{false: 'gray', true: '#2E8DFF'}}
+                                    thumbColor={theme === "white" ? 'white' : '#444444'}
                                     onValueChange={() => setRoutineAlarm(!routineAlarm)}
                                     value={routineAlarm}
                                 />
@@ -1333,13 +1337,13 @@ const Main: React.FC<Props> = ({globalFont,keys,todoList,routineList,routineId,l
                     <View style={{flexDirection:'row',justifyContent:'space-evenly',marginTop:5}}>
                         <Pressable
                             onPress={() => closeRoutineModal()}>
-                                <Image source={ require(  '../../assets/image/cancel.png') } style={styles.modalBut}/>
+                                <Image source={ theme === "white" ? require(  '../../assets/image/cancel-black.png') : require(  '../../assets/image/cancel-white.png') } style={styles.modalBut}/>
                         </Pressable>
                         <Pressable
                             onPress={onRoutine}
                             disabled={rouWeek.filter(item => item).length === 0}
                             >
-                            <Image source={ require(  '../../assets/image/add.png') } 
+                            <Image source={ theme === "white" ? require(  '../../assets/image/add-black.png') : require(  '../../assets/image/add-white.png') } 
                                 style={[styles.modalBut,{opacity:rouWeek.filter(item => item).length === 0 ? 0.3 : 1}]}/>
                         </Pressable>
                     </View>
@@ -1357,7 +1361,7 @@ const Main: React.FC<Props> = ({globalFont,keys,todoList,routineList,routineId,l
                     setCurrentMinute(-1)
                 }}
             >
-            <View style={{flex:1,justifyContent:'center',alignItems:'center',backgroundColor:'#00000010'}}>
+            <View style={{flex:1,justifyContent:'center',alignItems:'center',backgroundColor:'#00000020'}}>
             <View style={[styles.modal,{backgroundColor: globalBack}]}>
                 <Text style={[styles.modalTitle,{color:globalFont}]}>알림 등록</Text>
                 <View style={{flexDirection:'row',justifyContent:'center',gap:20,marginTop:10}}>
@@ -1406,14 +1410,14 @@ const Main: React.FC<Props> = ({globalFont,keys,todoList,routineList,routineId,l
                                 setCurrentHour(-1)
                                 setCurrentMinute(-1)
                             }}>
-                            <Image source={ require(  '../../assets/image/cancel.png') } style={styles.modalBut}/>
+                            <Image source={ theme === "white" ? require(  '../../assets/image/cancel-black.png') : require(  '../../assets/image/cancel-white.png')} style={styles.modalBut}/>
                         </Pressable>
                         <Pressable
                             disabled={(dateToInt(date) === dateToInt(new Date()) && 
                                 (currentHour < new Date().getHours() || (currentHour === new Date().getHours() && currentMinute <= new Date().getMinutes())))}
                             onPress={onAlarm}
                             >
-                            <Image source={ require(  '../../assets/image/add.png') } style={[styles.modalBut,{opacity: 
+                            <Image source={ theme === "white" ? require(  '../../assets/image/add-black.png') : require(  '../../assets/image/add-white.png') } style={[styles.modalBut,{opacity: 
                             (dateToInt(date) === dateToInt(new Date()) && 
                             (currentHour < new Date().getHours() || (currentHour === new Date().getHours() && currentMinute <= new Date().getMinutes()))) ? 0.3 : 1}]}/>
                         </Pressable>
@@ -1427,7 +1431,7 @@ const Main: React.FC<Props> = ({globalFont,keys,todoList,routineList,routineId,l
                 visible={upModal}
                 onRequestClose={() => closeUpModal()}
             >
-                <View style={{flex:1,justifyContent:'center',alignItems:'center',backgroundColor:'#00000010'}}>
+                <View style={{flex:1,justifyContent:'center',alignItems:'center',backgroundColor:'#00000020'}}>
                     {upState ? 
                         <View style={[styles.modal,{backgroundColor: globalBack}]}>
                             <View style={{flexDirection:'row',justifyContent:'space-between',alignItems:'center'}}>                         
@@ -1440,12 +1444,12 @@ const Main: React.FC<Props> = ({globalFont,keys,todoList,routineList,routineId,l
                             <View style={{flexDirection:'row',justifyContent:'space-evenly',marginTop:5}}>
                                 <Pressable
                                     onPress={() => closeUpModal()}>
-                                        <Image source={ require(  '../../assets/image/cancel.png') } style={styles.modalBut}/>
+                                        <Image source={ theme === "white" ? require(  '../../assets/image/cancel-black.png') : require(  '../../assets/image/cancel-white.png')} style={styles.modalBut}/>
                                 </Pressable>
                                 <Pressable
                                     onPress={onReRoutine}
                                     >
-                                    <Image source={ require(  '../../assets/image/check.png') } 
+                                    <Image source={ theme === "white" ? require(  '../../assets/image/check-black.png') : require(  '../../assets/image/check-white.png') } 
                                         style={styles.modalBut}/>
                                 </Pressable>
                             </View>
@@ -1509,8 +1513,8 @@ const Main: React.FC<Props> = ({globalFont,keys,todoList,routineList,routineId,l
                             <View style={{flexDirection:'row',gap:1,alignItems:'center'}}>
                                 <Text style={[styles.time,{color:globalFont,fontSize:20, marginBottom: Platform.OS === 'ios' ? 0 : 4.5, marginRight : Platform.OS === 'ios' ? 5 : 0,}]}>알림</Text>
                                 <Switch
-                                    trackColor={{false: 'darkgray', true: '#2E8DFF'}}
-                                    thumbColor={theme === "white" ? 'white' : '#232323'}
+                                    trackColor={{false: 'gray', true: '#2E8DFF'}}
+                                    thumbColor={theme === "white" ? 'white' : '#444444'}
                                     onValueChange={() => setUpAlarm(!upAlarm)}
                                     value={upAlarm}
                                 />
@@ -1552,13 +1556,13 @@ const Main: React.FC<Props> = ({globalFont,keys,todoList,routineList,routineId,l
                         <View style={{flexDirection:'row',justifyContent:'space-evenly',marginTop:5}}>
                             <Pressable
                                 onPress={() => closeUpModal()}>
-                                    <Image source={ require(  '../../assets/image/cancel.png') } style={styles.modalBut}/>
+                                    <Image source={ theme === "white" ? require(  '../../assets/image/cancel-black.png') : require(  '../../assets/image/cancel-white.png') } style={styles.modalBut}/>
                             </Pressable>
                             <Pressable
                                 onPress={onUpRoutine}
                                 disabled={upWeek.filter(item => item).length === 0}
                                 >
-                                <Image source={ require(  '../../assets/image/check.png') } 
+                                <Image source={ theme === "white" ? require(  '../../assets/image/check-black.png') : require(  '../../assets/image/check-white.png') } 
                                     style={[styles.modalBut,{opacity:upWeek.filter(item => item).length === 0 ? 0.3 : 1}]}/>
                             </Pressable>
                         </View>
@@ -1571,7 +1575,7 @@ const Main: React.FC<Props> = ({globalFont,keys,todoList,routineList,routineId,l
                 visible={modalConfirm?.active}
                 onRequestClose={closeConfirm}
             >
-                <View style={{flex:1,justifyContent:'center',alignItems:'center',backgroundColor:'#00000010'}}>
+                <View style={{flex:1,justifyContent:'center',alignItems:'center',backgroundColor:'#00000020'}}>
                     <View style={[styles.modal,{backgroundColor: globalBack}]}>
                         <Text style={[styles.modalTitle,{color:globalFont}]}>{modalConfirm?.title}</Text>
                         <View style={{paddingVertical:10,paddingHorizontal:20,gap:3}}>                            
@@ -1585,7 +1589,7 @@ const Main: React.FC<Props> = ({globalFont,keys,todoList,routineList,routineId,l
                         <View style={{flexDirection:'row',justifyContent:'space-evenly'}}>
                             <Pressable
                                 onPress={closeConfirm}>
-                                    <Image source={ require(  '../../assets/image/cancel.png') } 
+                                    <Image source={ theme === "white" ? require(  '../../assets/image/cancel-black.png') : require(  '../../assets/image/cancel-white.png') } 
                                         style={styles.modalBut}/>
                             </Pressable>
                             <Pressable
@@ -1595,7 +1599,7 @@ const Main: React.FC<Props> = ({globalFont,keys,todoList,routineList,routineId,l
                                     closeConfirm()
                                 }}
                                 >
-                                <Image source={ require(  '../../assets/image/check.png') } 
+                                <Image source={ theme === "white" ? require(  '../../assets/image/check-black.png') : require(  '../../assets/image/check-white.png') } 
                                     style={styles.modalBut}/>
                             </Pressable>
                         </View>
@@ -1702,7 +1706,7 @@ const styles = StyleSheet.create({
         borderWidth: 2,
         paddingTop: 0.5,
         height: 32,
-        borderRadius: 20,
+        borderRadius: 10,
         paddingHorizontal:1
     },
     rightImg : {

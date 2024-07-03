@@ -2,7 +2,8 @@ import { Image, Linking, Modal, Platform, Pressable, ScrollView, StyleSheet, Tex
 import { RoutineDTO, TodoDTO } from "../Index";
 import RNFS from 'react-native-fs';
 import DocumentPicker from 'react-native-document-picker';
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export type ModalDTO = {
     active : boolean,
@@ -41,6 +42,23 @@ const Setting: React.FC<Props> = ({globalFont,routineList,todoList,globalBack,ro
         message : '',
         buttonExist : false
     })
+
+    useEffect(() => {
+        const getData = async () => {
+
+            try {
+                const first = await AsyncStorage.getItem("first");
+
+                if (first === null) {
+                    setHowModal(true);
+                    await AsyncStorage.setItem("first","true");
+                }
+            } catch (error) {
+                console.error('불러오기 중 오류 발생', error);
+            }
+        }
+        getData();
+    },[])
 
     const closeConfirm = () => {
         setModalConfirm({
@@ -178,7 +196,7 @@ const Setting: React.FC<Props> = ({globalFont,routineList,todoList,globalBack,ro
                         setHowNum(0);
                     }}
                 >
-                    <Text style={{fontSize:17,color:globalFont}}>How To Use</Text>
+                    <Text style={{fontSize:17,color:globalFont}}>HOW TO USE</Text>
                 </Pressable>
                 <Pressable 
                    style={({pressed})  => [styles.itemButton,
@@ -230,7 +248,7 @@ const Setting: React.FC<Props> = ({globalFont,routineList,todoList,globalBack,ro
                 visible={modalConfirm?.active}
                 onRequestClose={closeConfirm}
             >
-                <View style={{flex:1,justifyContent:'center',alignItems:'center',backgroundColor:'#00000010'}}>
+                <View style={{flex:1,justifyContent:'center',alignItems:'center',backgroundColor:'#00000020'}}>
                     <View style={[styles.modal,{backgroundColor: globalBack}]}>
                         <Text style={[styles.modalTitle,{color:globalFont}]}>{modalConfirm?.title}</Text>
                         <View style={{paddingVertical:10,paddingHorizontal:20,gap:3}}>                            
@@ -241,7 +259,7 @@ const Setting: React.FC<Props> = ({globalFont,routineList,todoList,globalBack,ro
                         <View style={{flexDirection:'row',justifyContent:'space-evenly'}}>
                             {modalConfirm.buttonExist && <Pressable
                                 onPress={closeConfirm}>
-                                    <Image source={ require(  '../../assets/image/cancel.png') } 
+                                    <Image source={ theme === "white" ? require(  '../../assets/image/cancel-black.png') : require(  '../../assets/image/cancel-white.png') } 
                                         style={styles.modalBut}/>
                             </Pressable>}
                             <Pressable
@@ -250,7 +268,7 @@ const Setting: React.FC<Props> = ({globalFont,routineList,todoList,globalBack,ro
                                     modalConfirm.type === 'import' && requestAnimationFrame(() => fileImport())
                                 }}
                                 >
-                                <Image source={ require(  '../../assets/image/check.png') } 
+                                <Image source={ theme === "white" ? require(  '../../assets/image/check-black.png') : require(  '../../assets/image/check-white.png')  } 
                                     style={styles.modalBut}/>
                             </Pressable>
                         </View>
@@ -265,8 +283,13 @@ const Setting: React.FC<Props> = ({globalFont,routineList,todoList,globalBack,ro
             >
                 <TouchableWithoutFeedback onPress={() => setHowModal(false)}>
                     <View
-                        style={{flex:1,backgroundColor: theme === 'white' ? '#00000050' : '#FFFFFF30',height:'100%',justifyContent:'center'}}
+                        style={{flex:1,backgroundColor: theme === 'white' ? '#00000050' : '#FFFFFF30',height:'100%',justifyContent:'center',gap:50}}
                     >
+                            <View
+                                style={{flexDirection:'row',justifyContent:'space-around', alignItems:'center'}}
+                            >
+                                <Image source={require('../../assets/image/how.png')} style={{width: '60%', aspectRatio: 5/2}} />
+                            </View>
                             <View
                                 style={{flexDirection:'row',justifyContent:'space-around', alignItems:'center'}}
                             >
@@ -291,6 +314,11 @@ const Setting: React.FC<Props> = ({globalFont,routineList,todoList,globalBack,ro
                                     <Image source={theme === "white" ? require('../../assets/image/arrow-black.png') : require('../../assets/image/arrow-white.png')} 
                                     style={{width:25, height:25, transform:[{rotate : '90deg'}]}}/>
                                 </Pressable> : <View  style={{width:50}}/>}
+                            </View>
+                            <View
+                                style={{flexDirection:'row',justifyContent:'space-around', alignItems:'center',opacity:0}}
+                            >
+                                <Image source={require('../../assets/image/how.png')} style={{width: '60%', aspectRatio: 5/2}} />
                             </View>
                     </View>
                 </TouchableWithoutFeedback>
