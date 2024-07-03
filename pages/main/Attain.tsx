@@ -760,30 +760,42 @@ const Attain: React.FC<Props> = ({globalFont,todoList,routineList,page,date,star
                         value={search}
                     />
                 </View>
-                <View style={{flexDirection:'row',paddingHorizontal:10,gap:10}}>
-                    <View style={{flex:1,backgroundColor: theme === "white" ? 'whitesmoke' : '#222222',paddingVertical:5}}>
+                <View style={{flexDirection:'row',paddingHorizontal:10,gap:10,marginTop:5}}>
+                    <View style={{flex:1,backgroundColor: theme === "white" ? 'whitesmoke' : '#222222',paddingVertical:5, borderRadius: 5}}>
                         <Text style={[styles.h4,{color:globalFont,textAlign:'center'}]}>계획</Text>
                     </View>
-                    <View style={{flex:1,backgroundColor: theme === "white" ? 'whitesmoke' : '#222222',paddingVertical:5}}>
+                    <View style={{flex:1,backgroundColor: theme === "white" ? 'whitesmoke' : '#222222',paddingVertical:5, borderRadius: 5}}>
                         <Text style={[styles.h4,{color:globalFont,textAlign:'center'}]}>루틴</Text>
                     </View>
                 </View>
                 <View style={{flexDirection:'row',justifyContent:'center',flex:1,paddingHorizontal:10,gap:10}}>
-                    <ScrollView style={[styles.listBox,{borderColor: theme === 'white' ? 'lightgray' : '#444444'}]}>
+                    <ScrollView style={styles.listBox}>
                         {
                             todoFillList.filter(todo => todo.content.includes(search) && (listMode === 'ok' ? todo.success : !todo.success)).map((item,index) => 
-                            <Animated.View key={`${item}_${index}`} style={[styles.items,{opacity:aniTxt,borderColor: theme === 'white' ? 'lightgray' : '#444444' }]}>
+                            <Animated.View key={`${item}_${index}`} style={[styles.items,{opacity:aniTxt,borderColor: theme === 'white' ? 'whitesmoke' : '#333333' }]}>
                                 <Text style={{color:globalFont,margin:10}}>{item.content}</Text>
                             </Animated.View>)
                         }
+                        {
+                            todoFillList.filter(todo => todo.content.includes(search) && (listMode === 'ok' ? todo.success : !todo.success)).length === 0 &&
+                            <Animated.View style={{opacity:aniTxt}}>
+                                <Text style={{marginTop:10,fontSize:14,color:'darkgray',textAlign:'center'}}>해당하는 계획이 없습니다</Text>
+                            </Animated.View>
+                        }
                     </ScrollView>
-                    <ScrollView style={[styles.listBox,{borderColor: theme === 'white' ? 'lightgray' : '#444444'}]}>
+                    <ScrollView style={styles.listBox}>
                         {
                             type === 'date' ?
                             routineFillList.filter(rou => rou.content.includes(search) && (listMode === 'ok' ? 
                                 rou.success.findIndex(item => dateToInt(item) === dateToInt(date)) !== -1 : 
+                                rou.success.findIndex(item => dateToInt(item) === dateToInt(date)) === -1) ).length === 0 ? 
+                            <Animated.View style={{opacity:aniTxt}}>
+                                <Text style={{marginTop:10,fontSize:14,color:'darkgray',textAlign:'center'}}>해당하는 루틴이 없습니다</Text>
+                            </Animated.View>
+                            : routineFillList.filter(rou => rou.content.includes(search) && (listMode === 'ok' ? 
+                                rou.success.findIndex(item => dateToInt(item) === dateToInt(date)) !== -1 : 
                                 rou.success.findIndex(item => dateToInt(item) === dateToInt(date)) === -1) ).map((item,index) => 
-                            <Animated.View key={`${item}_${index}`} style={[styles.items,{opacity:aniTxt,borderColor: theme === 'white' ? 'lightgray' : '#444444' }]}>
+                            <Animated.View key={`${item}_${index}`} style={[styles.items,{opacity:aniTxt,borderColor: theme === 'white' ? 'whitesmoke' : '#333333' }]}>
                                 <Text style={{color:globalFont,margin:10,flex:1}}>{item.content}</Text>
                                 <Pressable
                                     onPress={() => {
@@ -949,7 +961,7 @@ const Attain: React.FC<Props> = ({globalFont,todoList,routineList,page,date,star
                                 renderHeader={ calendarHeader }
                                 current={type === "date" ? date.toISOString().split('T')[0] : endDate.toISOString().split('T')[0]}
                                 markedDates={{
-                                    [new Date().toISOString().split('T')[0]]: { selected: true, selectedColor: '#ff634750', customTextStyle: {fontWeight: 'bold', color: 'white'} },
+                                    [new Date().toISOString().split('T')[0]]: { selected: true, selectedColor: '#66666650', customTextStyle: {fontWeight: 'bold', color: 'white'} },
                                     ...routineMarkingDates
                                 }}
                                 theme={{
@@ -1074,13 +1086,12 @@ const styles = StyleSheet.create({
     },
     listBox : {
         flex: 1,
-        borderTopWidth: 1,
     },
     items : {
-        borderBottomWidth: 1,
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
+        borderBottomWidth: 1,
     },
     modal : {
         backgroundColor: 'white',
