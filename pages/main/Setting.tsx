@@ -1,4 +1,4 @@
-import { Alert, Image, Linking, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TouchableWithoutFeedback, View } from "react-native";
+import { Image, Linking, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TouchableWithoutFeedback, View } from "react-native";
 import { RoutineDTO, TodoDTO } from "../Index";
 import RNFS from 'react-native-fs';
 import DocumentPicker from 'react-native-document-picker';
@@ -208,16 +208,27 @@ const Setting: React.FC<Props> = ({globalFont,routineList,todoList,globalBack,ro
                 >
                     <Text style={{fontSize:17,color:globalFont}}>데이터 가져오기</Text>
                 </Pressable>
-                <Pressable
-                    onPress={() => openLink('https://kr.freepik.com/')}>
-                    <Text style={{textAlign:'center',fontSize:15,color:'darkgray',fontWeight:'bold',marginVertical:30}}>
-                        Images Designed By FreePik</Text>
-                </Pressable>
+                    <Pressable 
+                        style={({pressed})  => [styles.itemButton,
+                            {
+                                backgroundColor: pressed ? theme === "white" ? 'whitesmoke' : '#333333' : globalBack,
+                                borderBottomColor: theme === "white" ? 'whitesmoke' : '#333333'
+                            }
+                        ]}
+                        onPress={() => openLink('https://toss.me/agapro')}>
+                        <Text style={{fontSize:17,color:globalFont}}>개발자 밥주기</Text>
+                    </Pressable>
+                    <Pressable
+                        onPress={() => openLink('https://kr.freepik.com/')}>
+                        <Text style={{textAlign:'center',fontSize:15,color:'darkgray',fontWeight:'bold',marginVertical:30}}>
+                            Images Designed By FreePik</Text>
+                    </Pressable>
             </ScrollView>
             <Modal
                 animationType="fade"
                 transparent={true}
                 visible={modalConfirm?.active}
+                onRequestClose={closeConfirm}
             >
                 <View style={{flex:1,justifyContent:'center',alignItems:'center',backgroundColor:'#00000010'}}>
                     <View style={[styles.modal,{backgroundColor: globalBack}]}>
@@ -250,6 +261,7 @@ const Setting: React.FC<Props> = ({globalFont,routineList,todoList,globalBack,ro
                 animationType="fade"
                 transparent={true}
                 visible={howModal}
+                onRequestClose={() => setHowModal(false)}
             >
                 <TouchableWithoutFeedback onPress={() => setHowModal(false)}>
                     <View
@@ -260,10 +272,11 @@ const Setting: React.FC<Props> = ({globalFont,routineList,todoList,globalBack,ro
                             >
                                 {howNum !== 0 ? <Pressable
                                     onPress={() => setHowNum(howNum - 1)}    
+                                    style={{width:50, height:100, justifyContent:'center', alignItems:'center'}}
                                 >
                                     <Image source={theme === "white" ? require('../../assets/image/arrow-black.png') : require('../../assets/image/arrow-white.png')} 
                                     style={{width:25, height:25, transform:[{rotate : '270deg'}]}}/>
-                                </Pressable> : <View  style={{width:25, height:25}}/>}
+                                </Pressable> : <View  style={{width:50}}/>}
                                 <Image source={ 
                                     howNum === 0 ? require( `../../assets/image/use-0.png`) :
                                     howNum === 1 ? require( `../../assets/image/use-1.png`) :
@@ -273,10 +286,11 @@ const Setting: React.FC<Props> = ({globalFont,routineList,todoList,globalBack,ro
                                 style={{width: '70%', aspectRatio: 1/1}} />
                                 {howNum !== 3 ? <Pressable
                                     onPress={() => setHowNum(howNum + 1)}
+                                    style={{width:50, height:100, justifyContent:'center', alignItems:'center'}}
                                 >
                                     <Image source={theme === "white" ? require('../../assets/image/arrow-black.png') : require('../../assets/image/arrow-white.png')} 
                                     style={{width:25, height:25, transform:[{rotate : '90deg'}]}}/>
-                                </Pressable> : <View  style={{width:25, height:25}}/>}
+                                </Pressable> : <View  style={{width:50}}/>}
                             </View>
                     </View>
                 </TouchableWithoutFeedback>

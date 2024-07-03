@@ -753,7 +753,7 @@ const Attain: React.FC<Props> = ({globalFont,todoList,routineList,page,date,star
                     <TextInput 
                         ref={inputRef}
                         style={{backgroundColor: globalBack,paddingHorizontal:5,paddingVertical:  Platform.OS === 'ios' ? 8 : 3,flex:1,
-                                marginVertical: 5,marginLeft:7,borderWidth:1,borderColor: theme === "white" ? 'darkgray' : 'gray',color:globalFont}}
+                                marginVertical: 5,marginLeft:7,borderWidth:1,borderColor: theme === 'white' ? 'lightgray' : '#444444',color:globalFont}}
                         placeholder="검색"
                         placeholderTextColor="gray"
                         onChangeText={(text) => setSearch(text)}
@@ -769,21 +769,21 @@ const Attain: React.FC<Props> = ({globalFont,todoList,routineList,page,date,star
                     </View>
                 </View>
                 <View style={{flexDirection:'row',justifyContent:'center',flex:1,paddingHorizontal:10,gap:10}}>
-                    <ScrollView style={styles.listBox}>
+                    <ScrollView style={[styles.listBox,{borderColor: theme === 'white' ? 'lightgray' : '#444444'}]}>
                         {
                             todoFillList.filter(todo => todo.content.includes(search) && (listMode === 'ok' ? todo.success : !todo.success)).map((item,index) => 
-                            <Animated.View key={`${item}_${index}`} style={[styles.items,{opacity:aniTxt}]}>
+                            <Animated.View key={`${item}_${index}`} style={[styles.items,{opacity:aniTxt,borderColor: theme === 'white' ? 'lightgray' : '#444444' }]}>
                                 <Text style={{color:globalFont,margin:10}}>{item.content}</Text>
                             </Animated.View>)
                         }
                     </ScrollView>
-                    <ScrollView style={styles.listBox}>
+                    <ScrollView style={[styles.listBox,{borderColor: theme === 'white' ? 'lightgray' : '#444444'}]}>
                         {
                             type === 'date' ?
                             routineFillList.filter(rou => rou.content.includes(search) && (listMode === 'ok' ? 
                                 rou.success.findIndex(item => dateToInt(item) === dateToInt(date)) !== -1 : 
                                 rou.success.findIndex(item => dateToInt(item) === dateToInt(date)) === -1) ).map((item,index) => 
-                            <Animated.View key={`${item}_${index}`} style={[styles.items,{opacity:aniTxt}]}>
+                            <Animated.View key={`${item}_${index}`} style={[styles.items,{opacity:aniTxt,borderColor: theme === 'white' ? 'lightgray' : '#444444' }]}>
                                 <Text style={{color:globalFont,margin:10,flex:1}}>{item.content}</Text>
                                 <Pressable
                                     onPress={() => {
@@ -879,6 +879,10 @@ const Attain: React.FC<Props> = ({globalFont,todoList,routineList,page,date,star
                 animationType="fade"
                 transparent={true}
                 visible={routineModal}
+                onRequestClose={() => {
+                    setRoutineId(-1)
+                    setRoutineModal(false)
+                }}
             >
                  <View style={{flex:1,justifyContent:'center',alignItems:'center',backgroundColor:'#00000010'}}>
                     <View style={[styles.modal,{backgroundColor: globalBack,marginVertical:20}]}>
@@ -910,12 +914,12 @@ const Attain: React.FC<Props> = ({globalFont,todoList,routineList,page,date,star
                                     </Text>
                                     <View style={{width:'100%',backgroundColor: theme === "white" ? 'aliceblue' : '#444444',borderRadius:Math.floor(windowWidth*0.5 - 50) * 0.07,overflow:'hidden'}}>
                                         <Animated.View style={{
-                                            height:Math.floor(windowWidth*0.5 - 50) * 0.20,
+                                            height:Math.floor(windowWidth*0.5 - 50) * 0.25,
                                             width: aniBarA,
                                             backgroundColor:theme === "white" ? '#2E8DFF' : "#222222",
                                             borderRadius:Math.floor(windowWidth*0.5 - 50) * 0.07}}>
                                                 <Animated.Text style={{width:50,fontWeight:'bold', opacity: aniMoTxt, color:'white', position:'absolute', textDecorationLine:'underline',
-                                                    height:Math.floor(windowWidth*0.5 - 50) * 0.20,left: 10,textAlignVertical:'center',lineHeight : Platform.OS === 'ios' ? Math.floor(windowWidth*0.5 - 50) * 0.20 : undefined}}>
+                                                    height:Math.floor(windowWidth*0.5 - 50) * 0.25,left: 10,textAlignVertical:'center',lineHeight : Platform.OS === 'ios' ? Math.floor(windowWidth*0.5 - 50) * 0.25 : undefined}}>
                                                         {routineSuc(routineList.find(item => item.id === routineId))}/{routineTot(routineList.find(item => item.id === routineId),false)}
                                                 </Animated.Text>
                                         </Animated.View>
@@ -928,12 +932,12 @@ const Attain: React.FC<Props> = ({globalFont,todoList,routineList,page,date,star
                                 </Text>
                                 <View style={{width:'100%',backgroundColor: theme === "white" ? 'snow' : '#444444',borderRadius:Math.floor(windowWidth*0.5 - 50) * 0.07,overflow:'hidden'}}>
                                     <Animated.View style={{
-                                        height:Math.floor(windowWidth*0.5 - 50) * 0.20,
+                                        height:Math.floor(windowWidth*0.5 - 50) * 0.25,
                                         width: aniBarB,
                                         backgroundColor:theme === "white" ? 'tomato' : "#222222",
                                         borderRadius:Math.floor(windowWidth*0.5 - 50) * 0.07}}>
                                             <Animated.Text style={{width:50,fontWeight:'bold', opacity: aniMoTxt, color:'white', position:'absolute',textDecorationLine:'underline',
-                                                height:Math.floor(windowWidth*0.5 - 50) * 0.20,left: 10,textAlignVertical:'center',lineHeight : Platform.OS === 'ios' ? Math.floor(windowWidth*0.5 - 50) * 0.20 : undefined}}>
+                                                height:Math.floor(windowWidth*0.5 - 50) * 0.25,left: 10,textAlignVertical:'center',lineHeight : Platform.OS === 'ios' ? Math.floor(windowWidth*0.5 - 50) * 0.25 : undefined}}>
                                                     {routineNowSuc(routineList.find(item => item.id === routineId))}/{routineTot(routineList.find(item => item.id === routineId),true)}
                                             </Animated.Text>
                                     </Animated.View>
@@ -1070,11 +1074,9 @@ const styles = StyleSheet.create({
     listBox : {
         flex: 1,
         borderTopWidth: 1,
-        borderColor: 'gray',
     },
     items : {
         borderBottomWidth: 1,
-        borderBottomColor: 'gray',
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',

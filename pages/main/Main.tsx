@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Animated, Dimensions, Easing, Image, Keyboard, Modal, PanResponder, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, TouchableWithoutFeedback, View } from 'react-native';
+import { Animated, BackHandler, Dimensions, Easing, Image, Keyboard, Modal, PanResponder, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, TouchableWithoutFeedback, View } from 'react-native';
 import { Calendar, LocaleConfig } from 'react-native-calendars'
 import { RoutineDTO, TodoDTO } from '../Index';
 import { NestableDraggableFlatList, NestableScrollContainer, RenderItemParams, ScaleDecorator } from 'react-native-draggable-flatlist';
@@ -1158,7 +1158,7 @@ const Main: React.FC<Props> = ({globalFont,keys,todoList,routineList,routineId,l
                     height: -1,
                     width: 0,
                 }}}>
-                <View {...panResponder.panHandlers} style={{height:35,paddingTop:1}}>
+                <View {...panResponder.panHandlers} style={{height:40,paddingTop:2}}>
                     <Image style={{width:32,height:32,alignSelf:'center'}} source={require(  '../../assets/image/drag.png')}/>
                 </View>
                 <Pressable
@@ -1176,7 +1176,7 @@ const Main: React.FC<Props> = ({globalFont,keys,todoList,routineList,routineId,l
                     height: -1,
                     width: 0,
                 }}}>
-                <View {...panResponder.panHandlers} style={{height:35,paddingTop:1}}>
+                <View {...panResponder.panHandlers} style={{height:40,paddingTop:2}}>
                     <Image style={{width:32,height:32,alignSelf:'center'}} source={require(  '../../assets/image/drag.png')}/>
                 </View>
                 <NestableScrollContainer
@@ -1244,6 +1244,7 @@ const Main: React.FC<Props> = ({globalFont,keys,todoList,routineList,routineId,l
                 animationType="fade"
                 transparent={true}
                 visible={routine}
+                onRequestClose={() => closeRoutineModal()}
             >
             <View style={{flex:1,justifyContent:'center',alignItems:'center',backgroundColor:'#00000010'}}>
                 <View style={[styles.modal,{backgroundColor: globalBack}]}>
@@ -1349,6 +1350,12 @@ const Main: React.FC<Props> = ({globalFont,keys,todoList,routineList,routineId,l
                 animationType="fade"
                 transparent={true}
                 visible={alarm}
+                onRequestClose={() => {
+                    setAlarm(false)
+                    setAlarmId(-1)
+                    setCurrentHour(-1)
+                    setCurrentMinute(-1)
+                }}
             >
             <View style={{flex:1,justifyContent:'center',alignItems:'center',backgroundColor:'#00000010'}}>
             <View style={[styles.modal,{backgroundColor: globalBack}]}>
@@ -1418,6 +1425,7 @@ const Main: React.FC<Props> = ({globalFont,keys,todoList,routineList,routineId,l
                 animationType="fade"
                 transparent={true}
                 visible={upModal}
+                onRequestClose={() => closeUpModal()}
             >
                 <View style={{flex:1,justifyContent:'center',alignItems:'center',backgroundColor:'#00000010'}}>
                     {upState ? 
@@ -1561,6 +1569,7 @@ const Main: React.FC<Props> = ({globalFont,keys,todoList,routineList,routineId,l
                 animationType="fade"
                 transparent={true}
                 visible={modalConfirm?.active}
+                onRequestClose={closeConfirm}
             >
                 <View style={{flex:1,justifyContent:'center',alignItems:'center',backgroundColor:'#00000010'}}>
                     <View style={[styles.modal,{backgroundColor: globalBack}]}>

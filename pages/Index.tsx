@@ -1,12 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Main from "./main/Main";
-import { NativeModules, Dimensions, Image, Keyboard, Modal, PermissionsAndroid, Platform, Pressable, ScrollView, StyleSheet, Text, TouchableWithoutFeedback, View, SafeAreaView, KeyboardAvoidingView, LogBox } from "react-native";
+import { NativeModules, Dimensions, Image, Keyboard, Modal, PermissionsAndroid, Platform, Pressable, ScrollView, StyleSheet, Text, TouchableWithoutFeedback, View, KeyboardAvoidingView, LogBox, BackHandler, ToastAndroid } from "react-native";
 import Attain from "./main/Attain";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import PushNotification from "react-native-push-notification";
 import Setting from "./main/Setting";
 import PushNotificationIOS from "@react-native-community/push-notification-ios";
-import DraggableFlatList from "react-native-draggable-flatlist";
 const SharedStorage = NativeModules.SharedStorage;
 
 
@@ -210,6 +209,9 @@ const Index: React.FC = () => {
         setPage(pageIndex);
     }
 
+    let isExitApp : boolean = false;
+    let timeout : any;
+
     useEffect(() => {
         LogBox.ignoreAllLogs()
 
@@ -258,9 +260,29 @@ const Index: React.FC = () => {
         const keyShowListner = Keyboard.addListener('keyboardDidShow', keyShow);
         const keyHideListner = Keyboard.addListener('keyboardDidHide', keyHide);
 
+        const backAction = () => {
+            if (!isExitApp) {
+              isExitApp = true;
+              ToastAndroid.show('뒤로 가기를 한번 더 누르시면 종료됩니다.', ToastAndroid.SHORT);
+              
+              timeout = setTimeout(() => {isExitApp = false;}, 2000);
+            } else {
+                clearTimeout(timeout);
+                BackHandler.exitApp();
+            }
+            return true;
+            
+        }
+    
+        const backHandler = BackHandler.addEventListener(
+          "hardwareBackPress",
+          backAction
+        )
+
         return () => {
             keyShowListner.remove();
             keyHideListner.remove();
+            backHandler.remove();
         };
     },[])
     ////////데이터 저장 및 불러오기////////
@@ -397,13 +419,6 @@ const Index: React.FC = () => {
                 ...todoList.filter(item => dateToInt(item.date) === dateToInt(date)).map( item => {
                     return {content : item.content, success : item.success,  id: item.id }
                 })]
-                // todo: todoList.find(item => dateToInt(item.date) === dateToInt(date) && item.success === false) ? 
-                //     todoList.filter(item => dateToInt(item.date) === dateToInt(date) && item.success === false).map( item => '\u25A1  ' + item.content).join('\n'): 
-                //     "미완료 계획가 없습니다.",
-                // routine: routineList.find(rou => dateToInt(new Date(rou.startDate)) <= dateToInt(date) && (rou.end ? dateToInt(rou.endDate) > dateToInt(date) : true) && 
-                //         rou.term[date.getDay()]) ? routineList.filter(rou => dateToInt(new Date(rou.startDate)) <= dateToInt(date) && 
-                //         (rou.end ? dateToInt(rou.endDate) > dateToInt(date) : true) && rou.term[date.getDay()])?.map( item => '\u25A1  ' + item.content).join('\n') : 
-                //     "미완료 루틴이 없습니다."
             }))
         }
     },[todoList,routineList,reData])
@@ -746,6 +761,7 @@ const Index: React.FC = () => {
                         animationType="fade"
                         transparent={true}
                         visible={todoModal}
+                        onRequestClose={closeTodoModal}
                     >
                         <View style={{flex:1,justifyContent:'center',alignItems:'center',backgroundColor:'#00000010'}}>
                             <View style={[styles.modal,{backgroundColor: globalBack}]}>
@@ -786,6 +802,7 @@ const Index: React.FC = () => {
                         animationType="fade"
                         transparent={true}
                         visible={routineModal}
+                        onRequestClose={closeRoutineModal}
                     >
                         <View style={{flex:1,justifyContent:'center',alignItems:'center',backgroundColor:'#00000010'}}>
                             <View style={[styles.modal,{backgroundColor: globalBack}]}>

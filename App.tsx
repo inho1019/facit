@@ -7,7 +7,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 function App(): React.JSX.Element {
 
   return (
-    <SafeAreaView style={{flex:1,backgroundColor:'white'}}>
+    <SafeAreaView style={{flex:1}}>
       <GestureHandlerRootView>
         <Index/>
       </GestureHandlerRootView>
