@@ -803,7 +803,7 @@ const Attain: React.FC<Props> = ({globalFont,todoList,routineList,page,date,star
                                         setRoutineModal(true)
                                     }}
                                 >
-                                    <Image source={ theme === "white" ? require(  '../../assets/image/chart-black.png') : require(  '../../assets/image/chart-white.png')}  style={{width:19,height:19,marginRight:10}}/>
+                                    <Image source={ theme === "white" ? require(  '../../assets/image/search-black.png') : require(  '../../assets/image/search-white.png')}  style={{width:19,height:19,marginRight:10}}/>
                                 </Pressable>
                             </Animated.View>) :
                             routineFillList.filter(rou => rou.content.includes(search)).map((item,index) => 
@@ -821,7 +821,7 @@ const Attain: React.FC<Props> = ({globalFont,todoList,routineList,page,date,star
                                         setRoutineModal(true)
                                     }}
                                 >
-                                    <Image source={ theme === "white" ? require(  '../../assets/image/chart-black.png') : require(  '../../assets/image/chart-white.png')}  style={{width:19,height:19,marginRight:10}}/>
+                                    <Image source={ theme === "white" ? require(  '../../assets/image/search-black.png') : require(  '../../assets/image/search-white.png')}  style={{width:19,height:19,marginRight:10}}/>
                                 </Pressable>
                             </Animated.View>)
                         }
@@ -969,8 +969,7 @@ const Attain: React.FC<Props> = ({globalFont,todoList,routineList,page,date,star
                                         dayTextAtIndex0: {
                                             fontWeight: routineList.find(item => item.id === routineId)?.term[1] ? 'bold' : 'normal',
                                             opacity: routineList.find(item => item.id === routineId)?.term[1] ? 1 : 0.2,
-                                            borderWidth: 1.5,
-                                            borderColor: routineList.find(item => item.id === routineId)?.term[1] ? globalFont : globalBack,
+                                            backgroundColor: routineList.find(item => item.id === routineId)?.term[1] ? theme === 'white' ? 'whitesmoke' : '#333333' : globalBack,
                                             aspectRatio: 1/1,
                                             textAlignVertical: 'center',
                                             borderRadius: 9999
@@ -978,8 +977,7 @@ const Attain: React.FC<Props> = ({globalFont,todoList,routineList,page,date,star
                                         dayTextAtIndex1: {
                                             fontWeight: routineList.find(item => item.id === routineId)?.term[2] ? 'bold' : 'normal',
                                             opacity: routineList.find(item => item.id === routineId)?.term[2] ? 1 : 0.2,
-                                            borderWidth: 1.5,
-                                            borderColor: routineList.find(item => item.id === routineId)?.term[2] ? globalFont : globalBack,
+                                            backgroundColor: routineList.find(item => item.id === routineId)?.term[2] ? theme === 'white' ? 'whitesmoke' : '#333333' : globalBack,
                                             aspectRatio: 1/1,
                                             textAlignVertical: 'center',
                                             borderRadius: 9999
@@ -987,8 +985,7 @@ const Attain: React.FC<Props> = ({globalFont,todoList,routineList,page,date,star
                                         dayTextAtIndex2: {
                                             fontWeight: routineList.find(item => item.id === routineId)?.term[3] ? 'bold' : 'normal',
                                             opacity: routineList.find(item => item.id === routineId)?.term[3] ? 1 : 0.2,
-                                            borderWidth: 1.5,
-                                            borderColor: routineList.find(item => item.id === routineId)?.term[3] ? globalFont : globalBack,
+                                            backgroundColor: routineList.find(item => item.id === routineId)?.term[3] ? theme === 'white' ? 'whitesmoke' : '#333333' : globalBack,
                                             aspectRatio: 1/1,
                                             textAlignVertical: 'center',
                                             borderRadius: 9999
@@ -996,8 +993,7 @@ const Attain: React.FC<Props> = ({globalFont,todoList,routineList,page,date,star
                                         dayTextAtIndex3: {
                                             fontWeight: routineList.find(item => item.id === routineId)?.term[4] ? 'bold' : 'normal',
                                             opacity: routineList.find(item => item.id === routineId)?.term[4] ? 1 : 0.2,
-                                            borderWidth: 1.5,
-                                            borderColor: routineList.find(item => item.id === routineId)?.term[4] ? globalFont : globalBack,
+                                            backgroundColor: routineList.find(item => item.id === routineId)?.term[4] ? theme === 'white' ? 'whitesmoke' : '#333333' : globalBack,
                                             aspectRatio: 1/1,
                                             textAlignVertical: 'center',
                                             borderRadius: 9999
@@ -1005,8 +1001,7 @@ const Attain: React.FC<Props> = ({globalFont,todoList,routineList,page,date,star
                                         dayTextAtIndex4: {
                                             fontWeight: routineList.find(item => item.id === routineId)?.term[5] ? 'bold' : 'normal',
                                             opacity: routineList.find(item => item.id === routineId)?.term[5] ? 1 : 0.2,
-                                            borderWidth: 1.5,
-                                            borderColor: routineList.find(item => item.id === routineId)?.term[5] ? globalFont : globalBack,
+                                            backgroundColor: routineList.find(item => item.id === routineId)?.term[5] ? theme === 'white' ? 'whitesmoke' : '#333333' : globalBack,
                                             aspectRatio: 1/1,
                                             textAlignVertical: 'center',
                                             borderRadius: 9999
@@ -1015,8 +1010,7 @@ const Attain: React.FC<Props> = ({globalFont,todoList,routineList,page,date,star
                                             color: '#2E8DFF',
                                             fontWeight: routineList.find(item => item.id === routineId)?.term[6] ? 'bold' : 'normal',
                                             opacity: routineList.find(item => item.id === routineId)?.term[6] ? 1 : 0.2,
-                                            borderWidth: 1.5,
-                                            borderColor: routineList.find(item => item.id === routineId)?.term[6] ? '#2E8DFF' : globalBack,
+                                            backgroundColor: routineList.find(item => item.id === routineId)?.term[6] ? '#2E8DFF50' : globalBack,
                                             aspectRatio: 1/1,
                                             textAlignVertical: 'center',
                                             borderRadius: 9999,
@@ -1025,8 +1019,7 @@ const Attain: React.FC<Props> = ({globalFont,todoList,routineList,page,date,star
                                             color: 'tomato',
                                             fontWeight: routineList.find(item => item.id === routineId)?.term[0] ? 'bold' : 'normal',
                                             opacity: routineList.find(item => item.id === routineId)?.term[0] ? 1 : 0.2,
-                                            borderWidth: 1.5,
-                                            borderColor: routineList.find(item => item.id === routineId)?.term[0] ? 'tomato' : globalBack,
+                                            backgroundColor: routineList.find(item => item.id === routineId)?.term[0] ? '#FF634750' : globalBack,
                                             aspectRatio: 1/1,
                                             textAlignVertical: 'center',
                                             borderRadius: 9999,
