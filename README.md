@@ -1,7 +1,8 @@
 # FacIt
+![play_store_512](https://github.com/inho1019/facit/assets/120188554/f75e6306-d6e6-49bd-96af-473f4e27a704)
 
 ## GET APP
-[text](https://play.google.com/store/apps/details?id=com.facit)
+[PLAY STORE LINK](https://play.google.com/store/apps/details?id=com.facit)
 
 # 사용 패키지
 - "@react-native-async-storage/async-storage": "^1.22.3",
