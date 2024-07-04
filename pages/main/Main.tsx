@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, Dimensions, Easing, Image, Keyboard, Modal, PanResponder, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, TouchableWithoutFeedback, View } from 'react-native';
 import { Calendar, LocaleConfig } from 'react-native-calendars'
 import { RoutineDTO, TodoDTO } from '../Index';
@@ -297,6 +297,17 @@ const Main: React.FC<Props> = ({globalFont,keys,todoList,routineList,routineId,l
             }
         },
     })
+    ////////////달력 도트 찍기///////////
+    const dotDates = useMemo<any>(() => {
+        let dateRange : any = {};
+
+        todoList.forEach(item => {
+            let dateString : string = new Date(item.date).toISOString().split('T')[0];
+            dateRange[dateString] = { marked: true, dotColor: '#2E8DFF' };
+        });
+
+        return dateRange;
+    },[todoList])
 
     ////////////달력 캐러셀/////////////
     const scrollRef = useRef<ScrollView>(null)
@@ -1053,6 +1064,7 @@ const Main: React.FC<Props> = ({globalFont,keys,todoList,routineList,routineId,l
                                 setDate(new Date(day.dateString))
                             }}
                             markedDates={{
+                                ...dotDates,
                                 [date.toISOString().split('T')[0]]: { selected: true, selectedColor: 'darkgray' },
                             }}
                             theme={{
@@ -1221,29 +1233,9 @@ const Main: React.FC<Props> = ({globalFont,keys,todoList,routineList,routineId,l
                             renderItem={renderTodoItem}
                         />
                     </Animated.View>
-                    { <View style={{paddingBottom: (!upTodoKey && !upRouKey && !keys) ? 85 : 10}}/> }
+                    { <View style={{paddingBottom: (!upTodoKey && !upRouKey) ? 85 : 10}}/> }
                 </NestableScrollContainer>
             </View>}
-            {!later && !upTodoKey && !upRouKey && moveMode === 'none' &&
-                <View style={{flex:0, backgroundColor: keys ? globalBack : '#00000000',position:keys ? 'relative' : 'absolute',bottom: 0}}>
-                    <View style={[styles.contentBox,{opacity: keys ? 1 : 0.8, backgroundColor : theme === "white" ? "white" : "#333333"}]}>
-                        <TextInput 
-                            ref={inputRef}
-                            value={todoDTO.content} 
-                            multiline
-                            style={[styles.contentInput,{color:globalFont,marginVertical : Platform.OS === 'ios' ? 10 : 0 }]}
-                            placeholder='계획 입력'
-                            placeholderTextColor="gray"
-                            onChangeText={(text) => 
-                                setTodoDTO(item => {
-                                return {...item,content : text} 
-                        })}/>
-                        <Pressable onPress={ () => todoDTO.content.length > 0 && onDTO() }>
-                            <Image source={theme === "white" ? require(  '../../assets/image/add-black.png') : require(  '../../assets/image/add-white.png')} style={[styles.scheduleImg,
-                                {opacity: todoDTO.content.length > 0 ? 1 : 0.3 }]}/>
-                        </Pressable>
-                    </View>
-                </View>}
             <Modal
                 animationType="fade"
                 transparent={true}
@@ -1606,6 +1598,26 @@ const Main: React.FC<Props> = ({globalFont,keys,todoList,routineList,routineId,l
                     </View>
                 </View>
             </Modal>
+        {!later && !upTodoKey && !upRouKey && moveMode === 'none' &&
+                <View style={{position: 'absolute',bottom: 0}}>
+                    <View style={[styles.contentBox,{opacity: keys ? 0.9 : 0.7, backgroundColor : theme === "white" ? "white" : "#333333"}]}>
+                        <TextInput 
+                            ref={inputRef}
+                            value={todoDTO.content} 
+                            multiline
+                            style={[styles.contentInput,{color:globalFont,marginVertical : Platform.OS === 'ios' ? 10 : 0 }]}
+                            placeholder='계획 입력'
+                            placeholderTextColor="gray"
+                            onChangeText={(text) => 
+                                setTodoDTO(item => {
+                                return {...item,content : text} 
+                        })}/>
+                        <Pressable onPress={ () => todoDTO.content.length > 0 && onDTO() }>
+                            <Image source={theme === "white" ? require(  '../../assets/image/add-black.png') : require(  '../../assets/image/add-white.png')} style={[styles.scheduleImg,
+                                {opacity: todoDTO.content.length > 0 ? 1 : 0.3 }]}/>
+                        </Pressable>
+                    </View>
+                </View>}
         </View>
         </TouchableWithoutFeedback>
     );
