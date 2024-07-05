@@ -234,7 +234,7 @@ const Setting: React.FC<Props> = ({globalFont,routineList,todoList,globalBack,ro
                             }
                         ]}
                         onPress={() => openLink('https://toss.me/agapro')}>
-                        <Text style={{fontSize:17,color:globalFont}}>제작자 먹이주기</Text>
+                        <Text style={{fontSize:17,color:globalFont}}>제작자 모이주기</Text>
                     </Pressable>
                     <Pressable
                         onPress={() => openLink('https://kr.freepik.com/')}>

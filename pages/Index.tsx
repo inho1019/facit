@@ -100,6 +100,7 @@ const Index: React.FC = () => {
                 onNotification: function (notification) {
                     console.log(notification)
                     if(parseInt(notification.id) > 0) {
+                        setMainDate(todoList.find(item => item.id === parseInt(notification.id))?.date || new Date())
                         setTodoModal(true)
                         setTodoModalId(parseInt(notification.id))
                         scrollRef.current?.scrollTo({x: 0, animated: true})
@@ -115,6 +116,7 @@ const Index: React.FC = () => {
                         })
                     }
                     if(parseInt(notification.id) < 0) {
+                        setMainDate(new Date())
                         setRoutineDate(new Date())
                         setRoutineModal(true)
                         setRoutineModalId(-parseInt(notification.id))
@@ -141,6 +143,23 @@ const Index: React.FC = () => {
         }
         getData();
     },[])
+    /////////////////Main-Attain 연결점//////////////////
+    const [mainDate,setMainDate] = useState<Date>(new Date())
+    const [mainItem,setMainItem] = useState<TodoDTO | null>()
+
+    const onMainDate = (date: Date) => {
+        setMainDate(date)
+    }
+    const onMainItem = (item: TodoDTO) => {
+        setPage(0)
+        scrollRef.current?.scrollTo({x: 0, animated: true})
+        setTimeout(() => {
+            setMainItem(item)
+            requestAnimationFrame(() => {
+                setMainItem(null)   
+            })
+        },500)
+    } 
     //////////////////////Attain//////////////////////
     const [attainDate,setAttainDate] = useState(new Date());
     const [startDate,setStartDate] = useState(new Date());
@@ -744,7 +763,7 @@ const Index: React.FC = () => {
                         onMomentumScrollEnd={pageChange}
                         decelerationRate="fast"
                     >
-                        <Main globalFont={globalFont} keys={key} routineId={routineId} later={later} latId={latId}
+                        <Main globalFont={globalFont} keys={key} routineId={routineId} later={later} latId={latId} mainDate={mainDate} mainItem={mainItem}
                             onSetLatId={onSetLatId} onSetLater={onSetLater} onAttain={onAttain} onMoveTodo={onMoveTodo} onMoveRoutine={onMoveRoutine}
                             onTodoAlarm={onTodoAlarm} onCancelAlarm={onCancelAlarm} onTodoDTO={onTodoDTO} onTodoCheck={onTodoCheck}
                             onRoutineCheck={onRoutineCheck} onMove={onMove} onTodoDelete={onTodoDelete} onRoutineDTO={onRoutineDTO}
@@ -753,7 +772,7 @@ const Index: React.FC = () => {
                             todoList={todoList} routineList={routineList} globalBack={globalBack} theme={theme}/>
                         <Attain globalFont={globalFont} todoList={todoList} routineList={routineList} date={attainDate} page={page} keys={key}
                             type={attainType} startDate={startDate} endDate={endDate} onStartDate={onStartDate} onEndDate={onEndDate}
-                            onDate={onDate} onAttainType={onAttainType} globalBack={globalBack} theme={theme}/>
+                            onDate={onDate} onAttainType={onAttainType} onMainDate={onMainDate} onMainItem={onMainItem} globalBack={globalBack} theme={theme}/>
                         <Setting routineList={routineList} todoList={todoList} globalFont={globalFont} globalBack={globalBack} theme={theme}
                             todoId={todoId} routineId={routineId} onTodoId={onTodoId} onRoutineId={onRoutineId} deleteAlarm={deleteAlarm} addAlarm={addAlarm}
                             onTheme={onTheme} onTodo={onTodo} onRoutine={onRoutine} onLoading={onLoading}/>

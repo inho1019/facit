@@ -3,7 +3,6 @@ import { Animated, Dimensions, Easing, Image, Modal, Platform, Pressable, Scroll
 import { AttainType, RoutineDTO, TodoDTO } from "../Index";
 import { AnimatedCircularProgress } from 'react-native-circular-progress';
 import { Calendar } from "react-native-calendars";
-import { Circle } from "react-native-svg";
 
 interface Props {
     type: AttainType;
@@ -21,10 +20,12 @@ interface Props {
     onStartDate: (date: Date) => void;
     onEndDate: (date: Date) => void;
     onAttainType: (type: AttainType) => void;
+    onMainDate : (date: Date) => void;
+    onMainItem : (item: TodoDTO) => void;
 }
    
 
-const Attain: React.FC<Props> = ({globalFont,todoList,routineList,page,date,startDate,endDate,type,keys,globalBack,theme,onDate,onAttainType,onStartDate,onEndDate}) => {
+const Attain: React.FC<Props> = ({globalFont,todoList,routineList,page,date,startDate,endDate,type,keys,globalBack,theme,onDate,onAttainType,onStartDate,onEndDate,onMainDate,onMainItem}) => {
 
     const nowDate = useMemo(() => new Date(),[page]);
     const scrollRef2 = useRef<ScrollView>(null)
@@ -764,9 +765,16 @@ const Attain: React.FC<Props> = ({globalFont,todoList,routineList,page,date,star
                         style={styles.listBox}>
                         {
                             todoFillList.filter(todo => todo.content.includes(search) && (listMode === 'ok' ? todo.success : !todo.success)).map((item,index) => 
-                            <Animated.View key={`${item}_${index}`} style={[styles.items,{opacity:aniTxt,borderColor: theme === 'white' ? 'whitesmoke' : '#333333' }]}>
-                                <Text style={{color:globalFont,margin:10}}>{item.content}</Text>
-                            </Animated.View>)
+                                <Pressable
+                                    onPress={() => {
+                                        onMainDate(new Date(item.date))
+                                        onMainItem(item)
+                                    }}>
+                                    <Animated.View key={`${item}_${index}`} style={[styles.items,{opacity:aniTxt,borderColor: theme === 'white' ? 'whitesmoke' : '#333333' }]}>
+                                        <Text style={{color:globalFont,margin:10}}>{item.content}</Text>
+                                    </Animated.View>
+                                </Pressable>
+                            )
                         }
                         {
                             todoFillList.filter(todo => todo.content.includes(search) && (listMode === 'ok' ? todo.success : !todo.success)).length === 0 &&
@@ -800,6 +808,10 @@ const Attain: React.FC<Props> = ({globalFont,todoList,routineList,page,date,star
                                     <Image source={ theme === "white" ? require(  '../../assets/image/search-black.png') : require(  '../../assets/image/search-white.png')}  style={{width:19,height:19,marginRight:10}}/>
                                 </Pressable>
                             </Animated.View>) :
+                            routineFillList.filter(rou => rou.content.includes(search)).length === 0 ? 
+                            <Animated.View style={{opacity:aniTxt}}>
+                                <Text style={{marginTop:10,fontSize:14,color:'darkgray',textAlign:'center'}}>해당하는 루틴이 없습니다</Text>
+                            </Animated.View> :
                             routineFillList.filter(rou => rou.content.includes(search)).map((item,index) => 
                             <Animated.View key={`${item}_${index}`} style={[styles.items,{opacity:aniTxt,borderColor: theme === 'white' ? 'whitesmoke' : '#333333'}]}>
                                 {listMode === 'ok' ? <View
@@ -916,6 +928,15 @@ const Attain: React.FC<Props> = ({globalFont,todoList,routineList,page,date,star
                                 ref={scrollRef2}
                                 scrollEnabled={type !== "date"}
                                 showsHorizontalScrollIndicator={false}
+                                onScrollBeginDrag={() => aniAr.setValue(0)}
+                                onMomentumScrollEnd={() => {
+                                    Animated.timing(aniAr, {
+                                        toValue: 1,
+                                        duration: 500,
+                                        useNativeDriver: false,
+                                        easing: Easing.out(Easing.ease)
+                                    }).start()
+                                } }
                                 contentContainerStyle={{width: type !== "date" ? '200%' : '100%'}}
                                 scrollEventThrottle={50}
                                 decelerationRate="fast"

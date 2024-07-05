@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Animated, Dimensions, Easing, Image, Keyboard, Modal, PanResponder, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, TouchableWithoutFeedback, View } from 'react-native';
+import { Alert, Animated, Dimensions, Easing, Image, Keyboard, Modal, PanResponder, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, TouchableWithoutFeedback, View } from 'react-native';
 import { Calendar, LocaleConfig } from 'react-native-calendars'
 import { RoutineDTO, TodoDTO } from '../Index';
 import { NestableDraggableFlatList, NestableScrollContainer, RenderItemParams, ScaleDecorator } from 'react-native-draggable-flatlist';
@@ -34,6 +34,8 @@ interface Props {
     latId : number;
     globalBack : string;
     theme : "white" | "black";
+    mainDate : Date;
+    mainItem : TodoDTO;
     onMoveTodo: (date: Date, list: TodoDTO[]) => void;
     onMoveRoutine: (date: Date, list: RoutineDTO[]) => void;
     onSetLater: (bool: boolean) => void;
@@ -55,10 +57,8 @@ interface Props {
     onScrollActive: (bool: boolean) => void;
 }
 
-const Main: React.FC<Props> = ({globalFont,keys,todoList,routineList,routineId,later, latId, globalBack, theme,
-        onSetLatId, onSetLater,onTodoAlarm,onCancelAlarm,onAttain,onRoutineUpdateContent, onTodoUpdateContent,
-        onTodoDTO,onTodoCheck,onTodoDelete,onRoutineEnd,onRoutineRe,onRoutineUpdate, onMoveTodo, onMoveRoutine,
-        onRoutineCheck,onRoutineDTO,onMove, onScrollActive}) => {
+const Main: React.FC<Props> = ({globalFont,keys,todoList,routineList,routineId,later, latId, globalBack, theme, mainDate, mainItem,onSetLatId, onSetLater, onTodoAlarm, onCancelAlarm, onAttain,
+    onRoutineUpdateContent, onTodoUpdateContent, onTodoDTO,onTodoCheck,onTodoDelete,onRoutineEnd,onRoutineRe,onRoutineUpdate, onMoveTodo, onMoveRoutine,onRoutineCheck,onRoutineDTO,onMove, onScrollActive}) => {
 
 
     const dateToInt = (date : Date | string) => {
@@ -297,6 +297,8 @@ const Main: React.FC<Props> = ({globalFont,keys,todoList,routineList,routineId,l
             }
         },
     })
+    ///////////Date Connect//////////
+    useEffect(() => setDate(mainDate),[mainDate])
     ////////////달력 도트 찍기///////////
     const dotDates = useMemo<any>(() => {
         let dateRange : any = {};
@@ -841,7 +843,8 @@ const Main: React.FC<Props> = ({globalFont,keys,todoList,routineList,routineId,l
         return (
         <ScaleDecorator>
             <TouchableWithoutFeedback>
-                <View key={`${item}_${index}`} style={[styles.goalItem,{backgroundColor: isActive ? theme === 'white' ? 'whitesmoke' : '#333333' : globalBack}]}>
+                <View 
+                    key={`${item}_${index}`} style={[styles.goalItem,{backgroundColor: isActive ? theme === 'white' ? 'whitesmoke' : '#333333' : globalBack}]}>
                     <Pressable 
                         disabled={keys}
                         style={{height:'100%',backgroundColor: theme === 'white' ? 'whitesmoke' : '#333333' ,marginRight:10,flexDirection:'row',alignItems:'center',borderRadius:5}}
